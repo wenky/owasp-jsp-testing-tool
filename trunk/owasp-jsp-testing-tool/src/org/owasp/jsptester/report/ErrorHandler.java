@@ -27,28 +27,87 @@
  */
 package org.owasp.jsptester.report;
 
-
+/**
+ * Utility class to construct stack traces for the template error.jsp page.
+ * 
+ * @author Jason Li
+ *
+ */
 public class ErrorHandler
 {
+    /**
+     * Line separator string to use for HTML
+     */
+    private static final String HTML_NEW_LINE_CHAR = "<br>";
 
-    public static String buildStackTrace( Throwable throwable )
+    /**
+     * Line separator string to use for tooltips. Works in Mozilla Firefox.
+     * Internet Explorer truncates tooltips and has no known newline string.
+     */
+    private static final String TOOLTIP_NEW_LINE_CHAR = "&#013;";
+
+    /**
+     * Returns a text representation of a throwable's stack trace formatted for
+     * a tooltip
+     * 
+     * @param throwable
+     *            the throwable to create the stack trace for
+     * @return a text representation of a throwable's stack trace formatted for
+     *         a tooltip
+     */
+    public static String buildTooltipStackTrace( Throwable throwable )
     {
-        
-        
-        if (throwable != null) {
-            StackTraceElement[] stackTrace = throwable.getStackTrace();
-    
+        return buildStackTrace( throwable, TOOLTIP_NEW_LINE_CHAR );
+    }
+
+    /**
+     * Returns a text representation of a throwable's stack trace formatted for
+     * HTML
+     * 
+     * @param throwable
+     *            the throwable to create the stack trace for
+     * @return a text representation of a throwable's stack trace formatted for
+     *         HTML
+     */
+    public static String buildHtmlStackTrace( Throwable throwable )
+    {
+        return buildStackTrace( throwable, HTML_NEW_LINE_CHAR );
+    }
+
+    /**
+     * Returns a text representation of the stack trace for the given throwable
+     * using the given newLineChar to separate lines
+     * 
+     * @param throwable
+     *            the throwable to build the stack trace for
+     * @param newLineChar
+     *            the string to use to separate lines
+     * @return a text representation of the stack trace for the given throwable
+     *         using the given newLineChar to separate lines
+     */
+    private static String buildStackTrace( Throwable throwable,
+            String newLineChar )
+    {
+
+        if ( throwable != null )
+        {
+            // Start with the throwable's top level message
             StringBuffer errorMessage = new StringBuffer(
                     htmlEntityEncode( throwable.getMessage() ) );
+
+            // for each element in the stack trace, append the stack trace
+            // message
+            StackTraceElement[] stackTrace = throwable.getStackTrace();
             for ( int traceIdx = 0; traceIdx < stackTrace.length; traceIdx++ )
             {
-                errorMessage.append( htmlEntityEncode('\n' + stackTrace[traceIdx]
-                        .toString() ) );
+                errorMessage.append( newLineChar
+                        + htmlEntityEncode( stackTrace[traceIdx].toString() ) );
             }
-    
+
             return errorMessage.toString();
         }
-        
+
+        // default error message
         return "Unknown Error";
     }
 

@@ -41,35 +41,74 @@ import org.owasp.jsptester.attack.AttackLibrary;
 import org.owasp.jsptester.parser.TagFileParser;
 
 /**
- * @author Jason Li
+ * Utility class to create valid JSP tag syntax from tag library information.
  * 
+ * @author Jason Li
  */
 public class TestCase
 {
 
-    public static String generateTestCase( TagLibraryInfo tagLibrary,
+    /**
+     * Create a proper JSP tag with the given attribute set to the given attack
+     * 
+     * @param tagLibrary
+     *            the tagLibrary being tested
+     * @param tag
+     *            the tag being tested
+     * @param attr
+     *            the attribute being tested
+     * @param attack
+     *            the attack being used
+     * @return a String representing the valid JSP tag syntax for this test case
+     */
+    public static String generateTestCaseJspTag( TagLibraryInfo tagLibrary,
             TagInfo tag, TagAttributeInfo attr, Attack attack )
     {
         XML customTag = new XML( tagLibrary.getShortName() + ":"
                 + tag.getTagName() );
+
+        /*
+         * TODO: set required attributes
+         */
         customTag.addAttribute( attr.getName(), attack.getAttackString() );
         return customTag.toString();
     }
 
-    public static String generateTagTextTestCase( TagLibraryInfo tagLibrary,
-            TagInfo tag, Attack attack )
+    /**
+     * Create a proper JSP tag with the given attack embedded in the tag
+     * 
+     * @param tagLibrary
+     *            the tagLibrary being tested
+     * @param tag
+     *            the tag being tested
+     * @param attack
+     *            the attack being used
+     * @return a String representing the valid JSP tag syntax for this test case
+     */
+    public static String generateTagTextTestCaseJspTag(
+            TagLibraryInfo tagLibrary, TagInfo tag, Attack attack )
     {
         XML customTag = new XML( tagLibrary.getShortName() + ":"
                 + tag.getTagName() );
+        /*
+         * TODO: set required attributes
+         */
         customTag.setTagText( attack.getAttackString() );
         return customTag.toString();
     }
 
-    private static Set getRequiredAttributes( TagInfo tag )
+    /**
+     * Returns a Set<TagAttributeInfo> of required attributes for the given tag
+     * 
+     * @param tag
+     *            the tag to obtain the required attributes for
+     * @return a Set<TagAttributeInfo> of required attributes for the given tag
+     */
+    private static Set/* <TagAttributeInfo> */getRequiredAttributes( TagInfo tag )
     {
         TagAttributeInfo[] attrs = tag.getAttributes();
 
-        Set requiredAttrs = new HashSet();
+        Set/* <TagAttributeInfo> */requiredAttrs = new HashSet/* <TagAttributeInfo> */();
 
         for ( int attrIdx = 0; attrIdx < attrs.length; attrIdx++ )
         {
@@ -82,6 +121,9 @@ public class TestCase
         return requiredAttrs;
     }
 
+    /**
+     * @deprecated
+     */
     public static void main( String[] args ) throws Exception
     {
         String libraryFile = "resources/html_basic.tld";
@@ -105,10 +147,10 @@ public class TestCase
                 {
                     Attack attack = attacks[attackIdx];
 
-                    System.out.println( generateTagTextTestCase( tagLibrary, tag,
-                            attack ) );
-                    System.out.println( generateTestCase( tagLibrary, tag,
-                            attr, attack ) );
+                    System.out.println( generateTagTextTestCaseJspTag(
+                            tagLibrary, tag, attack ) );
+                    System.out.println( generateTestCaseJspTag( tagLibrary,
+                            tag, attr, attack ) );
                 }
             }
 

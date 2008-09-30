@@ -27,10 +27,10 @@
  */
 package org.owasp.jsptester.parser;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 
 import javax.servlet.jsp.tagext.TagAttributeInfo;
@@ -42,7 +42,6 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.owasp.jsptester.report.ReportGenerator;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -50,147 +49,214 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 /**
+ * Encapsulates the logic to parse a TLD file and create an instance of
+ * TagLibraryInfo.
+ * 
  * @author Jason Li
  * 
  */
 public class TagFileParser
 {
 
-    private TagFileParser() {}
-    
-    public static TagLibraryInfo loadTagFile( File tldFile )
-            throws ParserConfigurationException, SAXException, IOException
+    /**
+     * Constructs an instance of TagLibraryParser
+     */
+    private TagFileParser()
     {
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-        DocumentBuilder db;
+    }
 
-        db = dbf.newDocumentBuilder();
+    /**
+     * Returns an instance of TagLibraryInfo created by loading the given TLD
+     * file
+     * 
+     * @param tldFile
+     *            the TLD file to load
+     * @return an instance of TagLibraryInfo created by loading the given TLD
+     *         file
+     * @throws ParserConfigurationException
+     * @throws SAXException
+     * @throws IOException
+     */
+    public static TagLibraryInfo loadTagFile( File tldFile )
+            throws SAXException, IOException
+    {
+        // Create a document parser
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        DocumentBuilder db = null;
+
+        try
+        {
+            db = dbf.newDocumentBuilder();
+        }
+        catch ( ParserConfigurationException pce )
+        {
+            throw new SAXException( pce );
+        }
 
         Document dom = null;
 
-        /*
-         * Load and parse the file.
-         */
+        // Load and parse the file.
         dom = db.parse( tldFile );
 
+        // Get the root element (tag-lib) of the XML document
         Element taglib = dom.getDocumentElement();
 
         return parseTagLibElement( taglib );
     }
 
+    /**
+     * Returns an instance of TagLibraryInfo created from parsing the given
+     * tag-lib element
+     * 
+     * @param taglib
+     *            the tag-lib element to parse
+     * @return an instance of TagLibraryInfo created from parsing the given
+     *         tag-lib element
+     */
     private static TagLibraryInfo parseTagLibElement( Element taglib )
     {
-        NodeList nodes = taglib.getChildNodes();
-
-        String tlibversion = null;
-        String jspversion = null;
-        String shortname = null;
+        // JSP 1.1 elements to parse
+        String tlibVersion = null;
+        String jspVersion = null;
+        String shortName = null;
         String uri = null;
         String info = null;
 
-        Vector tagNodes = new Vector();
+        List tagNodes = new ArrayList();
 
-        // JSP 1.2 elements
+        // JSP 1.2 elements to parse
         String displayName = null;
         String smallIcon = null;
         String largeIcon = null;
         String description = null;
 
         Node validator = null;
-        Vector listenerNodes = new Vector();
+        List listenerNodes = new ArrayList();
 
-        // JSP 2.1 elements
-        Vector tagFileNodes = new Vector();
-        Vector functionNodes = new Vector();
-        Vector taglibExtensionNodes = new Vector();
+        // JSP 2.1 elements to parse
+        List tagFileNodes = new ArrayList();
+        List functionNodes = new ArrayList();
+        List taglibExtensionNodes = new ArrayList();
 
+        // Get the tag-lib node's child nodes
+        NodeList nodes = taglib.getChildNodes();
+
+        // iterate through all child nodes and look for the above JSP elements
         for ( int nodeIdx = 0; nodeIdx < nodes.getLength(); nodeIdx++ )
         {
             Node childNode = nodes.item( nodeIdx );
 
+            // if the node is not an element, skip to the next node
             if ( childNode.getNodeType() != Node.ELEMENT_NODE )
             {
                 continue;
             }
 
+            // if the node is a tlibversion element (JSP 1.1) or tlib-version
+            // element (JSP 1.2+), populate the tlibVersion from the text string
+            // of the node
             if ( "tlibversion".equals( childNode.getNodeName() )
                     || "tlib-version".equals( childNode.getNodeName() ) )
             {
-                tlibversion = parseElementString( parseElementString( childNode
-                        .getTextContent() ) );
+                tlibVersion = parseElementString( childNode.getTextContent() );
             }
+            // if the node is a jspversion element (JSP 1.1) or jsp-version
+            // element (JSP 1.2+), populate the jspVersion from the text string
+            // of the node
             else if ( "jspversion".equals( childNode.getNodeName() )
                     || "jsp-version".equals( childNode.getNodeName() ) )
             {
-                jspversion = parseElementString( parseElementString( childNode
-                        .getTextContent() ) );
+                jspVersion = parseElementString( childNode.getTextContent() );
             }
+            // if the node is a shortname element (JSP 1.1) or short-name
+            // element (JSP 1.2+), populate the shortName from the text string
+            // of the node
             else if ( "shortname".equals( childNode.getNodeName() )
                     || "short-name".equals( childNode.getNodeName() ) )
             {
-                shortname = parseElementString( parseElementString( childNode
-                        .getTextContent() ) );
+                shortName = parseElementString( childNode.getTextContent() );
             }
+            // if the node is a uri element, populate the uri from the text
+            // string of the node
             else if ( "uri".equals( childNode.getNodeName() ) )
             {
-                uri = parseElementString( parseElementString( childNode
-                        .getTextContent() ) );
+                uri = parseElementString( childNode.getTextContent() );
             }
+            // if the node is an info element, populate the info from the text
+            // string of the node
             else if ( "info".equals( childNode.getNodeName() ) )
             {
-                info = parseElementString( parseElementString( childNode
-                        .getTextContent() ) );
+                info = parseElementString( childNode.getTextContent() );
             }
+            // if the node is a tag element, add the node to the list of tag
+            // nodes to parse
             else if ( "tag".equals( childNode.getNodeName() ) )
             {
                 tagNodes.add( childNode );
             }
+            // if the node is a display-name element, populate the display-name
+            // from the text string of the node
             else if ( "display-name".equals( childNode.getNodeName() ) )
             {
-                displayName = parseElementString( parseElementString( childNode
-                        .getTextContent() ) );
+                displayName = parseElementString( childNode.getTextContent() );
             }
+            // if the node is a small-icon element, populate the smallIcon from
+            // the text string of the node
             else if ( "small-icon".equals( childNode.getNodeName() ) )
             {
-                smallIcon = parseElementString( parseElementString( childNode
-                        .getTextContent() ) );
+                smallIcon = parseElementString( childNode.getTextContent() );
             }
+            // if the node is a large-icon element, populate the largeIcon from
+            // the text string of the node
             else if ( "large-icon".equals( childNode.getNodeName() ) )
             {
-                largeIcon = parseElementString( parseElementString( childNode
-                        .getTextContent() ) );
+                largeIcon = parseElementString( childNode.getTextContent() );
             }
+            // if the node is a description element, populate the description
+            // from the text string of the node
             else if ( "description".equals( childNode.getNodeName() ) )
             {
                 description = parseElementString( parseElementString( childNode
                         .getTextContent() ) );
             }
+            // if the node is a validator element, parse the validator node to
+            // create the tag's validator
             else if ( "validator".equals( childNode.getNodeName() ) )
             {
-                // TODO: need to parse validators
+                // TODO: need to parse validator
                 validator = childNode;
             }
+            // if the node is a listener element, add the node to the list of
+            // listeners to parse
             else if ( "listener".equals( childNode.getNodeName() ) )
             {
-                // TODO: need to parse listeners
+                // TODO: need to parse listener
                 listenerNodes.add( childNode );
             }
+            // if the node is an icon element, populate the smallIcon and
+            // largeIcon from the element
             else if ( "icon".equals( childNode.getNodeName() ) )
             {
                 String[] iconInfo = parseIconElement( childNode );
                 smallIcon = iconInfo[0];
                 largeIcon = iconInfo[1];
             }
+            // if the node is a tag-file element, add the node to the list of
+            // tag files to parse
             else if ( "tag-file".equals( childNode.getNodeName() ) )
             {
-                // TODO: need to parse tagFiles
+                // TODO: need to parse tag file
                 tagFileNodes.add( childNode );
             }
+            // if the node is a function element, add the node to the list of
+            // functions to parse
             else if ( "function".equals( childNode.getNodeName() ) )
             {
                 // TODO: need to parse functions
                 functionNodes.add( childNode );
             }
+            // if the node is a taglib-extension element, add the node to the
+            // list of extensions to parse
             else if ( "taglib-extension".equals( childNode.getNodeName() ) )
             {
                 // TODO: need to parse taglib-extensions
@@ -204,28 +270,23 @@ public class TagFileParser
             }
         }
 
-        if ( tlibversion == null )
+        // Verify that the TLD file contained the required tlib version
+        if ( tlibVersion == null )
         {
             // TODO: throw an appropriate error
             System.err
                     .println( "TagLib element without required tlibversion element encountered" );
         }
 
-        if ( shortname == null )
+        // Verify that the TLD file contained the required short name version
+        if ( shortName == null )
         {
             // TODO: throw an appropriate error
             System.err
                     .println( "TagLib element without required shortname element encountered" );
         }
 
-        // technically JSP Version is required in version 1.2
-
-        TagLibraryInfoImpl tagLibraryInfo = new TagLibraryInfoImpl( shortname,
-                uri );
-        tagLibraryInfo.setTlibVersion( tlibversion );
-        tagLibraryInfo.setJspVersion( jspversion );
-        tagLibraryInfo.setInfo( info );
-
+        // Verify the TLD file contained at least one tag definition
         if ( tagNodes.size() < 1 )
         {
             // TODO: throw an appropriate error
@@ -233,119 +294,170 @@ public class TagFileParser
                     .println( "TagLib element without required tag element encountered" );
         }
 
+        // technically jsp-version is required in JSP 1.2 but since it's not
+        // required in JSP 1.1, for flexibility, ignore this if not present
+
+        // Create an instance of TagLibraryInfo and set the appropriate
+        // parameters
+        TagLibraryInfoImpl tagLibraryInfo = new TagLibraryInfoImpl( shortName,
+                uri );
+        tagLibraryInfo.setTlibVersion( tlibVersion );
+        tagLibraryInfo.setJspVersion( jspVersion );
+        tagLibraryInfo.setInfo( info );
+
+        // parse the tag elements and create an array of TagInfo instances
         TagInfo[] tags = new TagInfo[tagNodes.size()];
         for ( int tagIdx = 0; tagIdx < tagNodes.size(); tagIdx++ )
         {
             tags[tagIdx] = parseTagElement( (Node) tagNodes.get( tagIdx ),
                     tagLibraryInfo );
         }
+
         tagLibraryInfo.setTags( tags );
 
         return tagLibraryInfo;
     }
 
+    /**
+     * Returns an instance of the TagInfo class created from the given tag node
+     * using the given TagLibraryInfo
+     * 
+     * @param tag
+     *            the tag node to parse
+     * @param tagLibraryInfo
+     *            the TagLibraryInfo this tag will be part of
+     * @return an instance of the TagInfo class created from the given tag node
+     *         using the given TagLibraryInfo
+     */
     private static TagInfo parseTagElement( Node tag,
             TagLibraryInfo tagLibraryInfo )
     {
-        NodeList nodes = tag.getChildNodes();
-
+        // JSP 1.1 elements
         String name = null;
-        String tagclass = null;
-        String teiclass = null;
-        String bodycontent = "JSP";
+        String tagClass = null;
+        String teiClass = null;
+        String bodyContent = "JSP"; // JSP is default value
         String info = null;
 
-        Vector attributes = new Vector();
+        // List<TagAttributeInfo>
+        List attributes = new ArrayList();
 
-        // JSP 1.2 attributes
+        // JSP 1.2 elements
         String displayName = null;
         String smallIcon = null;
         String largeIcon = null;
         String description = null;
         String example = null;
 
-        Vector variableNodes = new Vector();
+        // List<TagVariableInfo>
+        List variables = new ArrayList();
 
         // JSP 2.1 attributes
-        boolean dynamicAttributes;
+        boolean dynamicAttributes = false; // false is default value
 
-        Vector tagExtensionNodes = new Vector();
+        List tagExtensionNodes = new ArrayList();
 
+        // Get the tag node's child nodes
+        NodeList nodes = tag.getChildNodes();
+
+        // Iterate through all the child nodes and look for the above JSP
+        // elements
         for ( int nodeIdx = 0; nodeIdx < nodes.getLength(); nodeIdx++ )
         {
             Node childNode = nodes.item( nodeIdx );
 
+            // if the node is not an element, skip to the next node
             if ( childNode.getNodeType() != Node.ELEMENT_NODE )
             {
                 continue;
             }
 
+            // if the node is a name element, populate the name from the text
+            // string of the node
             if ( "name".equals( childNode.getNodeName() ) )
             {
-                name = parseElementString( parseElementString( childNode
-                        .getTextContent() ) );
+                name = parseElementString( childNode.getTextContent() );
             }
+            // if the node is a tagclass element (JSP 1.1) or a tag-class
+            // element (JSP 1.2+), populate the tagClass from the text string of
+            // the node
             else if ( "tagclass".equals( childNode.getNodeName() )
                     || "tag-class".equals( childNode.getNodeName() ) )
             {
-                tagclass = parseElementString( parseElementString( childNode
-                        .getTextContent() ) );
+                tagClass = parseElementString( childNode.getTextContent() );
             }
+            // if the node is a teiclass element (JSP 1.1) or a tei-class
+            // element (JSP 1.2+), populate the teiClass from the text string of
+            // the node
             else if ( "teiclass".equals( childNode.getNodeName() )
                     || "tei-class".equals( childNode.getNodeName() ) )
             {
-                teiclass = parseElementString( parseElementString( childNode
-                        .getTextContent() ) );
+                teiClass = parseElementString( childNode.getTextContent() );
             }
+            // if the node is a bodycontent element (JSP 1.1) or a body-content
+            // element (JSP 1.2+), populate the bodyContent from the text string
+            // of the node
             else if ( "bodycontent".equals( childNode.getNodeName() )
                     || "body-content".equals( childNode.getNodeName() ) )
             {
-                bodycontent = parseElementString( parseElementString( childNode
-                        .getTextContent() ) );
+                bodyContent = parseElementString( childNode.getTextContent() );
             }
+            // if the node is an info element, populate the info from the text
+            // string of the node
             else if ( "info".equals( childNode.getNodeName() ) )
             {
-                info = parseElementString( parseElementString( childNode
-                        .getTextContent() ) );
+                info = parseElementString( childNode.getTextContent() );
             }
+            // if the node is an attribute element, parse the attribute node and
+            // add it to the list of attributes
             else if ( "attribute".equals( childNode.getNodeName() ) )
             {
                 TagAttributeInfo attribute = parseAttributeElement( childNode );
                 attributes.add( attribute );
             }
+            // if the node is a display-name element, populate the displayName
+            // from the text string of the node
             else if ( "display-name".equals( childNode.getNodeName() ) )
             {
-                displayName = parseElementString( parseElementString( childNode
-                        .getTextContent() ) );
+                displayName = parseElementString( childNode.getTextContent() );
             }
+            // if the node is a small-icon element, populate the smallIcon from
+            // the text string of the node
             else if ( "small-icon".equals( childNode.getNodeName() ) )
             {
-                smallIcon = parseElementString( parseElementString( childNode
-                        .getTextContent() ) );
+                smallIcon = parseElementString( childNode.getTextContent() );
             }
+            // if the node is a large-icon element, populate the largeIcon from
+            // the text string of the node
             else if ( "large-icon".equals( childNode.getNodeName() ) )
             {
-                largeIcon = parseElementString( parseElementString( childNode
-                        .getTextContent() ) );
+                largeIcon = parseElementString( childNode.getTextContent() );
             }
+            // if the node is a description element, populate the description
+            // from the text string of the node
             else if ( "description".equals( childNode.getNodeName() ) )
             {
-                description = parseElementString( parseElementString( childNode
-                        .getTextContent() ) );
+                description = parseElementString( childNode.getTextContent() );
             }
+            // if the node is a variable element, add the node to the list of
+            // variables
             else if ( "variable".equals( childNode.getNodeName() ) )
             {
-                variableNodes.add( childNode );
+                TagVariableInfo variable = parseVariableElement( childNode );
+                variables.add( variable );
             }
+            // if the node is a example element, populate the example from the
+            // text string of the node
             else if ( "example".equals( childNode.getNodeName() ) )
             {
-                example = parseElementString( parseElementString( childNode
-                        .getTextContent() ) );
+                example = parseElementString( childNode.getTextContent() );
             }
+            // if the node is a dynamic-attributes element, populate the
+            // dynamicAttributes from the text string of the node
             else if ( "dynamic-attributes".equals( childNode.getNodeName() ) )
             {
-                dynamicAttributes = parseTldBoolean( parseElementString( parseElementString( childNode
-                        .getTextContent() ) ) );
+                dynamicAttributes = parseTldBoolean( parseElementString( childNode
+                        .getTextContent() ) );
             }
             else
             {
@@ -354,6 +466,7 @@ public class TagFileParser
             }
         }
 
+        // Verify the tag node had the required name element
         if ( name == null )
         {
             // TODO: throw appropriate error
@@ -361,17 +474,22 @@ public class TagFileParser
                     .println( "Tag element without required name element encountered" );
         }
 
-        if ( tagclass == null )
+        // Verify the tag node had the required tagclass/tag-class element
+        if ( tagClass == null )
         {
             // TODO: throw appropriate error
             System.err
                     .println( "Tag element without required tagclass element encountered" );
         }
 
-        // TODO: have to do something for tag library extra info
-        return new TagInfo( name, tagclass, bodycontent, info, tagLibraryInfo,
-                null, (TagAttributeInfo[]) attributes
-                        .toArray( new TagAttributeInfo[attributes.size()] ) );
+        // TODO: have to do something for TagExtraInfo
+        return new TagInfo( name, tagClass, bodyContent, info, tagLibraryInfo, null,
+                (TagAttributeInfo[]) attributes
+                        .toArray( new TagAttributeInfo[attributes.size()] ),
+                displayName, smallIcon, largeIcon,
+                (TagVariableInfo[]) variables
+                        .toArray( new TagVariableInfo[variables.size()] ),
+                dynamicAttributes );
     }
 
     private static TagAttributeInfo parseAttributeElement( Node attribute )
@@ -669,7 +787,7 @@ public class TagFileParser
         }
 
         return new String[]
-        { smallIcon, largeIcon };
+            { smallIcon, largeIcon };
     }
 
     private static void parseTagFileElement( Node tagFile )
@@ -837,12 +955,18 @@ public class TagFileParser
         return ( value == null ? null : value.trim() );
     }
 
+    /**
+     * Test code to confirm parsing of TLD files
+     * @deprecated
+     * @param args
+     * @throws Exception
+     */
     public static void main( String[] args ) throws Exception
     {
         File f = new File( "resources/html_basic.tld" );
-        
-        TagLibraryInfo tld = TagFileParser.loadTagFile(f);
-        
-        System.out.println(tld.getInfoString());
+
+        TagLibraryInfo tld = TagFileParser.loadTagFile( f );
+
+        System.out.println( tld.getInfoString() );
     }
 }

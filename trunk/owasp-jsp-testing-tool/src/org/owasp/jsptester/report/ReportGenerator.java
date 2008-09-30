@@ -28,24 +28,28 @@
 package org.owasp.jsptester.report;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
-import java.util.logging.Level;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 import javax.servlet.jsp.tagext.TagAttributeInfo;
 import javax.servlet.jsp.tagext.TagInfo;
 import javax.servlet.jsp.tagext.TagLibraryInfo;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
+import org.apache.velocity.exception.VelocityException;
 import org.apache.velocity.runtime.RuntimeConstants;
 import org.apache.velocity.runtime.log.JdkLogChute;
 import org.owasp.jsptester.attack.Attack;
 import org.owasp.jsptester.attack.AttackLibrary;
+import org.owasp.jsptester.conf.Configuration;
 
 public class ReportGenerator
 {
@@ -53,22 +57,27 @@ public class ReportGenerator
     private static final Logger LOGGER = Logger
             .getLogger( ReportGenerator.class.getName() );
 
-    private static final String FRAME_NAMESPACE = "frame";
-
     private static ReportGenerator INSTANCE;
 
     private final VelocityEngine engine = new VelocityEngine();
 
-    private ReportGenerator() throws Exception
+    private ReportGenerator() throws VelocityException
     {
         engine.setProperty( RuntimeConstants.RUNTIME_LOG_LOGSYSTEM_CLASS,
                 JdkLogChute.class.getName() );
 
-        engine.init();
+        try
+        {
+            engine.init();
+        }
+        catch ( Exception e )
+        {
+            throw new VelocityException( e );
+        }
     }
 
     public synchronized static final ReportGenerator getInstance()
-            throws Exception
+            throws VelocityException
     {
         if ( INSTANCE == null )
         {
@@ -78,197 +87,328 @@ public class ReportGenerator
         return INSTANCE;
     }
 
-    private static final String getReportTemplate()
+    /**
+     * Copies the base template for the report to the given directory
+     * 
+     * @param outputDir
+     *            the output directory to copy template files to
+     * @throws IOException
+     *             if an I/O error occurs during copying
+     */
+    private void copyBase( File outputDir ) throws IOException
     {
-        // TODO: Do this in a configuration file
-        File f = new File( "template/report.vm" );
-        if ( !f.exists() )
-        {
-            throw new RuntimeException( "File doesn't exist " );
-        }
+        LOGGER.entering( ReportGenerator.class.getName(), "copyBase(File)" );
 
-        return "template/report.vm";
+        FileUtils.copyFileToDirectory( new File( Configuration.getInstance()
+                .getProperty( Configuration.TEMPLATE_INDEX_JSP ) ), outputDir );
+
+        FileUtils.copyFileToDirectory( new File( Configuration.getInstance()
+                .getProperty( Configuration.TEMPLATE_ERROR_JSP ) ), outputDir );
+
+        FileUtils.copyDirectory( new File( Configuration.getInstance()
+                .getProperty( Configuration.TEMPLATE_META_INF ) ), new File(
+                outputDir, "META-INF" ) );
+
+        FileUtils.copyDirectory( new File( Configuration.getInstance()
+                .getProperty( Configuration.TEMPLATE_WEB_INF ) ), new File( outputDir,
+                "WEB-INF" ) );
+
+        LOGGER.exiting( ReportGenerator.class.getName(), "copyBase(File)" );
     }
 
-    private static final String getTestCaseTemplate()
+    /**
+     * Generates a report on the given tag library using the given attacks and
+     * places the output in the given outputDir.
+     * 
+     * @param tagLibrary
+     *            the tag library to test
+     * @param attacks
+     *            the set of attacks to use
+     * @param outputDir
+     *            the output directory to place the report in
+     * @throws IOException
+     *             if any I/O error occurs
+     */
+    public List/*<File>*/ generateTagReport( TagLibraryInfo tagLibrary, Attack[] attacks,
+            File outputDir ) throws IOException
     {
-        // TODO: Do this in a configuration file
-        File f = new File( "template/testcase.vm" );
-        if ( !f.exists() )
-        {
-            throw new RuntimeException( "File doesn't exist " );
-        }
 
-        return "template/testcase.vm";
-    }
+        List/*<File>*/ generatedTestCases = new ArrayList/*<File>*/();
 
-    private static void copyFile( File src, File dst ) throws IOException
-    {
-        if ( !src.exists() )
-        {
-            throw new IllegalArgumentException( "Source file does not exist" );
-        }
+        // Copy the base files over
+        copyBase( outputDir );
 
-        if ( dst.exists() && dst.isDirectory() )
-        {
-            throw new IllegalArgumentException(
-                    "Destination file exists as a directory" );
-        }
+        LOGGER.fine( "Base files copied" );
 
-        FileReader reader = null;
+        File reportFile = new File( outputDir, "report.html" );
         FileWriter writer = null;
+
         try
         {
-            reader = new FileReader( src );
-            writer = new FileWriter( dst );
+            writer = new FileWriter( reportFile );
 
-            int read = -1;
-            while ( ( read = reader.read() ) >= 0 )
-            {
-                writer.write( read );
-            }
-            
-            writer.flush();
-        }
-        catch ( IOException ioe )
-        {
-            LOGGER.throwing( ReportGenerator.class.getName(), "copyFile", ioe );
-            throw ioe;
+            // generate initial report
+            generateReport( tagLibrary, writer );
         }
         finally
         {
-            try
+            IOUtils.closeQuietly( writer );
+            writer = null;
+        }
+        LOGGER.fine( "Main report file generated" );
+
+        TagInfo[] tags = tagLibrary.getTags();
+
+        // generate test case for each tag
+        for ( int tagIdx = 0; tagIdx < tags.length; tagIdx++ )
+        {
+            TagInfo tag = tags[tagIdx];
+
+            // For each tag, test each attack embedded inside the component
+            for ( int attackIdx = 0; attackIdx < attacks.length; attackIdx++ )
             {
-                if ( reader != null )
+                Attack attack = attacks[attackIdx];
+
+                FileWriter compFileWriter = null;
+
+                try
                 {
-                    reader.close();
+                    // Create a test case file [tagName-attackName.jsp]
+                    File compFile = new File( outputDir, tag.getTagName() + "-"
+                            + attack.getName() + ".jsp" );
+                    compFileWriter = new FileWriter( compFile );
+
+                    generateComponentTest( tagLibrary, tag, attack,
+                            compFileWriter );
+                    
+                    generatedTestCases.add(compFile);
                 }
-            }
-            catch ( IOException ioe )
-            {
-                LOGGER.log( Level.WARNING, "Unable to close reader", ioe );
-            }
-            try
-            {
-                if ( writer != null )
+                finally
                 {
-                    writer.close();
+                    IOUtils.closeQuietly( compFileWriter );
+                    compFileWriter = null;
                 }
-            }
-            catch ( IOException ioe )
-            {
-                LOGGER.log( Level.WARNING, "Unable to close writer", ioe );
+
+                LOGGER.fine( tag.getTagName() + "-" + attack.getName()
+                        + " file generated" );
             }
 
+            // For each attribute, test each attack in the attribute
+            TagAttributeInfo[] attrs = tag.getAttributes();
+            for ( int attrIdx = 0; attrIdx < attrs.length; attrIdx++ )
+            {
+                TagAttributeInfo attr = attrs[attrIdx];
+                for ( int attackIdx = 0; attackIdx < attacks.length; attackIdx++ )
+                {
+                    Attack attack = attacks[attackIdx];
+
+                    FileWriter compFileWriter = null;
+                    try
+                    {
+                        // Create a test case file
+                        // [tagName-attackName-attrName.jsp]
+                        File compFile = new File( outputDir, tag.getTagName()
+                                + "-" + attr.getName() + "-" + attack.getName()
+                                + ".jsp" );
+                        compFileWriter = new FileWriter( compFile );
+
+                        generateAtrributeTest( tagLibrary, tags[tagIdx],
+                                attrs[attrIdx], attacks[attackIdx],
+                                compFileWriter );
+
+                        generatedTestCases.add( compFile );
+                    }
+                    finally
+                    {
+                        IOUtils.closeQuietly( compFileWriter );
+                    }
+                    LOGGER.fine( tag.getTagName() + "-" + attr.getName() + "-"
+                            + attack.getName() + " file generated" );
+                }
+            }
         }
 
+        return generatedTestCases;
     }
 
-    public void copyBase( File outputDir ) throws IOException
+    /**
+     * Writes the main report file from a Velocity report template
+     * 
+     * @param tagLibrary
+     *            the tab library being tested
+     * @param output
+     *            the Writer to use for output
+     * @throws VelocityException
+     *             if an error using the Velocity engine occurs
+     */
+    private void generateReport( TagLibraryInfo tagLibrary, Writer output )
+            throws VelocityException
     {
-        File indexJsp = new File( "template/index.jsp" );
-        File indexCopy = new File( outputDir, "index.jsp" );
-        
-        copyFile( indexJsp, indexCopy );
-        
-        File errorJsp = new File( "template/error.jsp" );
-        File errorCopy = new File( outputDir, "error.jsp" );
-        
-        copyFile( errorJsp, errorCopy );
+        Template reportTemplate = null;
 
-    }
-
-    public void generateReport( TagLibraryInfo tagLibrary, Writer output )
-            throws Exception
-    {
-        Template reportTemplate = engine.getTemplate( getReportTemplate() );
+        try
+        {
+            // Load the Velocity template
+            reportTemplate = engine.getTemplate( Configuration.getInstance()
+                    .getProperty( Configuration.TEMPLATE_REPORT ) );
+        }
+        catch ( Exception e )
+        {
+            throw new VelocityException( e );
+        }
 
         VelocityContext context = new VelocityContext();
 
+        // Set template properties
         context.put( "tagLibName", "Tag Library" );
         context.put( "tagLib", tagLibrary );
         context.put( "attacks", AttackLibrary.getInstance().getAttacks() );
-        context.put( "frame_namespace", FRAME_NAMESPACE );
+        context.put( "frame_namespace", Configuration.getInstance()
+                .getProperty( Configuration.REPORT_FRAME_NAMESPACE ) );
 
-        // TODO: these need to be in a configuration file
-        context.put( "context_root", "test/" );
-        context.put( "extension", ".jsp" );
+        context.put( "context_root", Configuration.getInstance().getProperty(
+                Configuration.REPORT_CONTEXT_ROOT ) );
+        context.put( "extension", Configuration.getInstance().getProperty(
+                Configuration.REPORT_FILE_EXTENSION ) );
 
         if ( reportTemplate != null )
         {
-            reportTemplate.merge( context, output );
+            try
+            {
+                // fill the template attributes
+                reportTemplate.merge( context, output );
+            }
+            catch ( IOException ioe )
+            {
+                throw new VelocityException( ioe );
+            }
         }
     }
 
-    public void generateAtrributeTest( TagLibraryInfo tagLibrary, TagInfo tag,
+    /**
+     * Writes a test case using the given Attack for the given tag attribute
+     * using the given Writer
+     * 
+     * @param tagLibrary
+     *            the tag library being tested
+     * @param tag
+     *            the tag being tested
+     * @param attr
+     *            the attribute being tested
+     * @param attack
+     *            the attack used in the test
+     * @param output
+     *            the output writer where the test case is written
+     * @throws VelocityException
+     *             if an error using the Velocity engine occurs
+     */
+    private void generateAtrributeTest( TagLibraryInfo tagLibrary, TagInfo tag,
             TagAttributeInfo attr, Attack attack, Writer output )
-            throws Exception
+            throws VelocityException
     {
-        Template reportTemplate = engine.getTemplate( getTestCaseTemplate() );
+        Template reportTemplate = null;
+
+        try
+        {
+            // load the report test case Velocity template
+            reportTemplate = engine.getTemplate( Configuration.getInstance()
+                    .getProperty( Configuration.TEMPLATE_TEST_CASE ) );
+        }
+        catch ( Exception e )
+        {
+            throw new VelocityException( e );
+        }
 
         VelocityContext context = new VelocityContext();
 
-        String testCase = TestCase.generateTestCase( tagLibrary, tag, attr,
-                attack );
+        // Create the JSP Tag test case
+        String testCase = TestCase.generateTestCaseJspTag( tagLibrary, tag,
+                attr, attack );
 
+        // add the template attributes
         context.put( "tagLib", tagLibrary );
         context.put( "tag", tag );
         context.put( "attribute", attr );
         context.put( "attack", attack );
         context.put( "tag_test", testCase );
-
-        /*
-         * TODO: this is a temporary hack to make it work wit JSF. Will
-         * eventually have a UI component to allow custom prefix/suffix stuff
-         */
-        context
-                .put(
-                        "test_prefix",
-                        new String[]
-                            {
-                                    "<%@ taglib uri=\"http://java.sun.com/jsf/core\" prefix=\"f\" %>",
-                                    "<f:view>" } );
-        context.put( "test_suffix", new String[]
-            { "</f:view>" } );
+        context.put( "test_prefix", Configuration.getInstance().getProperty(
+                Configuration.REPORT_TEST_PREFIX ) );
+        context.put( "test_suffix", Configuration.getInstance().getProperty(
+                Configuration.REPORT_TEST_SUFFIX ) );
 
         if ( reportTemplate != null )
         {
-            reportTemplate.merge( context, output );
+            try
+            {
+                // fill the attributes in the template
+                reportTemplate.merge( context, output );
+            }
+            catch ( IOException ioe )
+            {
+                throw new VelocityException( ioe );
+            }
         }
     }
 
-    public void generateComponentTest( TagLibraryInfo tagLibrary, TagInfo tag,
-            Attack attack, Writer output ) throws Exception
+    /**
+     * Writes a test case for the given Attack embedded in the given tag using
+     * the given Writer.
+     * 
+     * @param tagLibrary
+     *            the tag library being tested
+     * @param tag
+     *            the tag being tested
+     * @param attack
+     *            the attack to use in testing
+     * @param output
+     *            the Writer to write the test to
+     * @throws VelocityException
+     *             if an error occurs using the Velocity engine
+     */
+    private void generateComponentTest( TagLibraryInfo tagLibrary, TagInfo tag,
+            Attack attack, Writer output ) throws VelocityException
     {
-        Template reportTemplate = engine.getTemplate( getTestCaseTemplate() );
+        Template reportTemplate = null;
+
+        try
+        {
+            // load the Velocity template
+            reportTemplate = engine.getTemplate( Configuration.getInstance()
+                    .getProperty( Configuration.TEMPLATE_TEST_CASE ) );
+        }
+        catch ( Exception e )
+        {
+            throw new VelocityException( e );
+        }
 
         VelocityContext context = new VelocityContext();
 
-        String testCase = TestCase.generateTagTextTestCase( tagLibrary, tag,
-                attack );
+        // generate the JSP tag test case
+        String testCase = TestCase.generateTagTextTestCaseJspTag( tagLibrary,
+                tag, attack );
 
+        // add the template attributes
         context.put( "tagLib", tagLibrary );
         context.put( "tag", tag );
         context.put( "attack", attack );
         context.put( "tag_test", testCase );
 
-        /*
-         * TODO: this is a temporary hack to make it work wit JSF. Will
-         * eventually have a UI component to allow custom prefix/suffix stuff
-         */
-        context
-                .put(
-                        "test_prefix",
-                        new String[]
-                            {
-                                    "<%@ taglib uri=\"http://java.sun.com/jsf/core\" prefix=\"f\" %>",
-                                    "<f:view>" } );
-        context.put( "test_suffix", new String[]
-            { "</f:view>" } );
+        context.put( "test_prefix", Configuration.getInstance().getProperty(
+                Configuration.REPORT_TEST_PREFIX ) );
+        context.put( "test_suffix", Configuration.getInstance().getProperty(
+                Configuration.REPORT_TEST_SUFFIX ) );
 
         if ( reportTemplate != null )
         {
-            reportTemplate.merge( context, output );
+            try
+            {
+                // fill the attributes in the template
+                reportTemplate.merge( context, output );
+            }
+            catch ( IOException ioe )
+            {
+                throw new VelocityException( ioe );
+            }
         }
     }
 }

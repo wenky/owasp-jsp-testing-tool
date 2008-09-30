@@ -28,16 +28,22 @@
 package org.owasp.jsptester.tester;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.net.URL;
+import java.util.Iterator;
+import java.util.List;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Handler;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.servlet.jsp.tagext.TagAttributeInfo;
-import javax.servlet.jsp.tagext.TagInfo;
 import javax.servlet.jsp.tagext.TagLibraryInfo;
 
 import org.owasp.jsptester.attack.Attack;
 import org.owasp.jsptester.attack.AttackLibrary;
+import org.owasp.jsptester.conf.Configuration;
+import org.owasp.jsptester.exec.EmbeddedServer;
+import org.owasp.jsptester.exec.TestCaseSerializer;
 import org.owasp.jsptester.parser.TagFileParser;
 import org.owasp.jsptester.report.ReportGenerator;
 
@@ -48,13 +54,16 @@ import org.owasp.jsptester.report.ReportGenerator;
 public class JspTester
 {
 
-    private static final Logger logger = Logger.getLogger( "JspTester" );
+    private static final Logger LOGGER = Logger.getLogger( JspTester.class
+            .getName() );
 
     private TagLibraryInfo tagLibrary;
+
     private Attack[] attacks;
+
     private ReportGenerator reportGenerator;
-    
-    public JspTester(String libraryFileLocation) throws Exception
+
+    public JspTester( String libraryFileLocation ) throws Exception
     {
         File libraryFile = new File( libraryFileLocation );
         if ( !libraryFile.exists() || libraryFile.exists()
@@ -63,17 +72,17 @@ public class JspTester
             throw new IllegalArgumentException(
                     "The specified TLD file does not exists" );
         }
-        
+
         tagLibrary = TagFileParser.loadTagFile( libraryFile );
 
         attacks = AttackLibrary.getInstance().getAttacks();
-        
+
         reportGenerator = ReportGenerator.getInstance();
     }
-    
+
     public void testLibrary( String outputDirLocation ) throws Exception
     {
-        logger.entering( JspTester.class.getName(), "testLibrary" );
+        LOGGER.entering( JspTester.class.getName(), "testLibrary" );
 
         File outputDir = new File( outputDirLocation );
         if ( outputDir.exists() && !outputDir.isDirectory() )
@@ -87,65 +96,47 @@ public class JspTester
             {
                 throw new IOException( "Unable to create directories" );
             }
+
+            LOGGER.fine( "Output directory [" + outputDir.getAbsolutePath()
+                    + "] created" );
         }
 
-        reportGenerator.copyBase( outputDir );
-        
-        File reportFile = new File( outputDir, "report.html" );
-        FileWriter writer = new FileWriter( reportFile );
+        List/* <File> */files = reportGenerator.generateTagReport( tagLibrary,
+                attacks, outputDir );
 
-        reportGenerator.generateReport( tagLibrary, writer );
+        EmbeddedServer server = new EmbeddedServer();
+        server.init();
+        server.start();
 
-        logger.fine( "Main report file generated" );
-
-        TagInfo[] tags = tagLibrary.getTags();
-
-        for ( int tagIdx = 0; tagIdx < tags.length; tagIdx++ )
+        File reportOut = new File("./output");
+        reportOut.mkdirs();
+        for ( Iterator i = files.iterator(); i.hasNext(); )
         {
-            TagInfo tag = tags[tagIdx];
-
-            // do tag text attack
-            for ( int attackIdx = 0; attackIdx < attacks.length; attackIdx++ )
+            try
             {
-                Attack attack = attacks[attackIdx];
-                FileWriter compFileWriter = new FileWriter( new File(
-                        outputDir, tag.getTagName() + "-" + attack.getName()
-                                + ".jsp" ) );
+                File f = (File) i.next();
+                LOGGER.info( f.getName() );
+                URL test = new URL(
+                        "http://localhost:"
+                        + Configuration.getInstance().getProperty(
+                                Configuration.EMBEDDED_PORT_NUM )
+                        + "/"
+                        + Configuration.getInstance().getProperty(
+                                Configuration.REPORT_CONTEXT_ROOT) 
+                                        + f.getName() )  ;
+                LOGGER.info( "trying: " + test );
+                TestCaseSerializer tcs = new TestCaseSerializer( test );
+                
 
-                reportGenerator.generateComponentTest(
-                        tagLibrary, tag, attack, compFileWriter );
-                compFileWriter.close();
-
-                logger.fine( tag.getTagName() + "-" + attack.getName()
-                        + " file generated" );
+                tcs.serialize( new File( reportOut, f.getName() ) );
             }
-
-            TagAttributeInfo[] attrs = tag.getAttributes();
-            for ( int attrIdx = 0; attrIdx < attrs.length; attrIdx++ )
+            catch ( Exception e )
             {
-                TagAttributeInfo attr = attrs[attrIdx];
-                for ( int attackIdx = 0; attackIdx < attacks.length; attackIdx++ )
-                {
-                    Attack attack = attacks[attackIdx];
-                    FileWriter compFileWriter = new FileWriter( new File(
-                            outputDir, tag.getTagName() + "-" + attr.getName()
-                                    + "-" + attack.getName() + ".jsp" ) );
-
-                    reportGenerator.generateAtrributeTest(
-                            tagLibrary, tags[tagIdx], attrs[attrIdx],
-                            attacks[attackIdx], compFileWriter );
-
-                    compFileWriter.close();
-
-                    logger.fine( tag.getTagName() + "-" + attr.getName() + "-"
-                            + attack.getName() + " file generated" );
-                }
+                LOGGER.throwing( this.getClass().getName(), "testLibrary", e );
             }
         }
 
-        writer.close();
-
-        logger.exiting( JspTester.class.getName(), "testLibrary" );
+        LOGGER.exiting( JspTester.class.getName(), "testLibrary" );
     }
 
     /**
@@ -153,8 +144,14 @@ public class JspTester
      */
     public static void main( String[] args ) throws Exception
     {
+        Handler handler = new ConsoleHandler();
+        handler.setLevel( Level.INFO );
+        Logger.getLogger( "" ).setLevel( Level.INFO );
+        Logger.getLogger( "" ).addHandler( handler );
+
         String tldFile = "resources/subset.tld";
-        String outputDir = "WebContent/";
+        String outputDir = Configuration.getInstance().getProperty(
+                Configuration.EMBEDDED_DOC_BASE );
 
         JspTester tester = new JspTester( tldFile );
         tester.testLibrary( outputDir );
