@@ -28,25 +28,37 @@
 package org.owasp.jsptester.databean;
 
 /**
- * Data Bean
+ * Java user bean used in JSP pages to pass information if necessary in JSP
+ * pages
+ * 
+ * @author Jason Li
  */
-public class DataBean {
+public class DataBean
+{
 
-	private String test = "";
+    /**
+     * The value of the bean
+     */
+    private String test = "";
 
-	/**
-	 * @return the test
-	 */
-	public String getTest() {
-		return test;
-	}
+    /**
+     * Returns the value stored in the bean
+     * 
+     * @return the value stored in the bean
+     */
+    public String getTest()
+    {
+        return test;
+    }
 
-	/**
-	 * Sets the test to the value specified by test
-	 *
-	 * @param test the test to set
-	 */
-	public void setTest(String test) {
-		this.test = test;
-	}
+    /**
+     * Sets the value of the bean to the value specified by test
+     * 
+     * @param test
+     *            the value to set
+     */
+    public void setTest( String test )
+    {
+        this.test = test;
+    }
 }

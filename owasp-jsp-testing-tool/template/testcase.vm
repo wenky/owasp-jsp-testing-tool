@@ -33,13 +33,9 @@ function x()
 <h1>${test_title}</h1>
 <input id="result" type="text" value="passIt('${test_id}')"/>
 <div id="test-case">
-#foreach(${prefix} in ${test_prefix})
-${prefix} 
-#end
+${test_prefix}
 ${tag_test}
-#foreach(${suffix} in ${test_suffix})
-${suffix} 
-#end
+${test_suffix}
 </div>
 <script>
 var eventHandlers = new Array( "onabort", "onblur", "onchange", "onclick",

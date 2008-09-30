@@ -27,14 +27,38 @@
  */
 package org.owasp.jsptester.attack;
 
+/**
+ * This class encapsulates the details of an XSS attack test case.
+ * 
+ * @author Jason Li
+ */
 public class Attack
 {
+    /**
+     * The name of the attack (name must be safe for file names)
+     */
     private final String name;
 
+    /**
+     * Display name for the attack
+     */
     private final String displayName;
 
+    /**
+     * The actual attack string
+     */
     private final String attackString;
 
+    /**
+     * Constructs an Attack test case using the given parameters.
+     * 
+     * @param name
+     *            the name (file name safe) of the attack
+     * @param displayName
+     *            the display name for the attack
+     * @param attackString
+     *            the actual attack string
+     */
     public Attack( String name, String displayName, String attackString )
     {
         this.name = name;
@@ -43,7 +67,9 @@ public class Attack
     }
 
     /**
-     * @return the name
+     * Returns the name (file name safe) of the attack
+     * 
+     * @return the name (file name safe) of the attack
      */
     public String getName()
     {
@@ -51,7 +77,9 @@ public class Attack
     }
 
     /**
-     * @return the attackString
+     * Returns the attack string
+     * 
+     * @return the attack string
      */
     public String getAttackString()
     {
@@ -59,13 +87,20 @@ public class Attack
     }
 
     /**
-     * @return the displayName
+     * Returns the display name of the attack
+     * 
+     * @return the display name of the attack
      */
     public String getDisplayName()
     {
         return displayName;
     }
 
+    /*
+     * (non-Javadoc)
+     * 
+     * @see java.lang.Object#toString()
+     */
     public String toString()
     {
         return "[name: " + name + ", displayName: " + displayName

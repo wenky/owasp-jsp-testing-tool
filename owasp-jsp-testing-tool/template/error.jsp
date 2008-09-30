@@ -1,6 +1,4 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<%@ taglib uri="http://java.sun.com/jsf/html" prefix="h"%>
-<%@ taglib uri="http://java.sun.com/jsf/core" prefix="f"%>
 <%@ page isErrorPage="true"%>
 <%@page import="org.owasp.jsptester.report.ErrorHandler"%>
 <html>
@@ -15,12 +13,15 @@
     response.setStatus( HttpServletResponse.SC_OK );
 
     String msg = "Unexpected Arrival at Error Page";
+    String tooltip = msg;
+    
     if ( exception != null )
     {
-        msg = ErrorHandler.buildStackTrace( exception.getCause() );
+        msg = ErrorHandler.buildHtmlStackTrace( exception );
+        tooltip = ErrorHandler.buildTooltipStackTrace( exception );
     }
 %>
-<input id="error" type="text" value="<%= msg %>" />
+<input id="error" type="text" value="<%= tooltip %>" />
 <h1>Error!</h1>
 <%=msg%>
 </body>
