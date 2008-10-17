@@ -48,22 +48,28 @@ public class EmbeddedServer
 
     private static String getDocBaseDir()
     {
-        return ( new File( Configuration.getInstance().getProperty( Configuration.EMBEDDED_DOC_BASE ) ) )
-                .getAbsolutePath();
+        return ( new File( Configuration.getInstance().getProperty(
+                Configuration.EMBEDDED_DOC_BASE ) ) ).getAbsolutePath();
     }
 
     private static String getWebRoot()
     {
-        return new File( Configuration.getInstance().getProperty( Configuration.EMBEDDED_WEB_ROOT ) )
-                .getAbsolutePath();
+        return new File( Configuration.getInstance().getProperty(
+                Configuration.EMBEDDED_WEB_ROOT ) ).getAbsolutePath();
     }
 
     private static int getPortNum()
     {
-        return Integer.parseInt( Configuration.getInstance().getProperty( Configuration.EMBEDDED_PORT_NUM ) );
+        return Integer.parseInt( Configuration.getInstance().getProperty(
+                Configuration.EMBEDDED_PORT_NUM ) );
     }
 
-    public void init()
+    public EmbeddedServer()
+    {
+        init();
+    }
+
+    private void init()
     {
         // instantiate a new instance of Embedded class
         server = new Embedded();
@@ -94,9 +100,22 @@ public class EmbeddedServer
         server.addConnector( connector );
     }
 
+    /**
+     * @throws LifecycleException
+     * @see org.apache.catalina.startup.Embedded#start()
+     */
     public void start() throws LifecycleException
     {
-        server.start();
+        this.server.start();
+    }
+
+    /**
+     * @throws LifecycleException
+     * @see org.apache.catalina.startup.Embedded#stop()
+     */
+    public void stop() throws LifecycleException
+    {
+        this.server.stop();
     }
 
     public static void main( String[] args ) throws Exception
@@ -104,40 +123,6 @@ public class EmbeddedServer
         EmbeddedServer es = new EmbeddedServer();
         es.init();
         es.start();
-        //
-        // Embedded embedded;
-        // Host host;
-        //        
-        // Engine engine = null;
-        // // Set the home directory
-        // System.setProperty("catalina.home", getAppBaseDir());
-        //
-        // // Create an embedded server
-        // embedded = new Embedded();
-        //
-        // // Create an engine
-        // engine = embedded.createEngine();
-        // engine.setDefaultHost("localhost");
-        //
-        // // Create a default virtual host
-        // host = embedded.createHost("localhost", getAppBaseDir()
-        // + "/webapps");
-        // engine.addChild(host);
-        //
-        // // Create the ROOT context
-        // Context context = embedded.createContext("",
-        // getAppBaseDir() + "/webapps/ROOT");
-        // host.addChild(context);
-        //
-        // // Install the assembled container hierarchy
-        // embedded.addEngine(engine);
-        //
-        // // Assemble and install a default HTTP connector
-        // Connector connector =
-        // embedded.createConnector((String) null, 8080, false);
-        // embedded.addConnector(connector);
-        // // Start the embedded server
-        // embedded.start();
 
         Thread.sleep( 600000 );
 

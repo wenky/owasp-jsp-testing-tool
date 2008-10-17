@@ -86,11 +86,6 @@ public class TestCaseSerializer
             
             IOUtils.copy( responseBody, output );
         }
-//        catch ( HttpContentTooLargeException hctle )
-//        {
-//            // TODO: proper error handling
-//            hctle.printStackTrace();            
-//        }
         catch ( IOException ioe )
         {
             LOGGER.log( Level.WARNING, "Error serializing test case", ioe );            

@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
+import java.util.logging.Logger;
 
 import javax.servlet.jsp.tagext.TagAttributeInfo;
 import javax.servlet.jsp.tagext.TagInfo;
@@ -57,6 +58,9 @@ import org.xml.sax.SAXException;
  */
 public class TagFileParser
 {
+
+    private static Logger LOGGER = Logger.getLogger( TagFileParser.class
+            .getName() );
 
     /**
      * Constructs an instance of TagLibraryParser
@@ -264,8 +268,7 @@ public class TagFileParser
             }
             else
             {
-                // TODO: throw an appropriate error
-                System.err.println( "Unknown element encountered: "
+                LOGGER.fine( "Unknown element encountered: "
                         + childNode.getNodeName() );
             }
         }
@@ -273,25 +276,22 @@ public class TagFileParser
         // Verify that the TLD file contained the required tlib version
         if ( tlibVersion == null )
         {
-            // TODO: throw an appropriate error
-            System.err
-                    .println( "TagLib element without required tlibversion element encountered" );
+            LOGGER
+                    .warning( "TagLib element without required tlibversion element encountered" );
         }
 
         // Verify that the TLD file contained the required short name version
         if ( shortName == null )
         {
-            // TODO: throw an appropriate error
-            System.err
-                    .println( "TagLib element without required shortname element encountered" );
+            LOGGER
+                    .warning( "TagLib element without required shortname element encountered" );
         }
 
         // Verify the TLD file contained at least one tag definition
         if ( tagNodes.size() < 1 )
         {
-            // TODO: throw an appropriate error
-            System.err
-                    .println( "TagLib element without required tag element encountered" );
+            LOGGER
+                    .warning( "TagLib element without required tag element encountered" );
         }
 
         // technically jsp-version is required in JSP 1.2 but since it's not
@@ -461,30 +461,26 @@ public class TagFileParser
             }
             else
             {
-                // TODO: throw an appropriate error
-                System.err.println( "Unknown element encountered" );
+                LOGGER.fine( "Unknown element encountered" );
             }
         }
 
         // Verify the tag node had the required name element
         if ( name == null )
         {
-            // TODO: throw appropriate error
-            System.err
-                    .println( "Tag element without required name element encountered" );
+            LOGGER.warning( "Tag element without required name element encountered" );
         }
 
         // Verify the tag node had the required tagclass/tag-class element
         if ( tagClass == null )
         {
-            // TODO: throw appropriate error
-            System.err
-                    .println( "Tag element without required tagclass element encountered" );
+            LOGGER
+                    .warning( "Tag element without required tagclass element encountered" );
         }
 
         // TODO: have to do something for TagExtraInfo
-        return new TagInfo( name, tagClass, bodyContent, info, tagLibraryInfo, null,
-                (TagAttributeInfo[]) attributes
+        return new TagInfo( name, tagClass, bodyContent, info, tagLibraryInfo,
+                null, (TagAttributeInfo[]) attributes
                         .toArray( new TagAttributeInfo[attributes.size()] ),
                 displayName, smallIcon, largeIcon,
                 (TagVariableInfo[]) variables
@@ -540,17 +536,14 @@ public class TagFileParser
             }
             else
             {
-                // TODO: throw an appropriate error
-                System.err.println( "Unknown element encountered: "
+                LOGGER.fine( "Unknown element encountered: "
                         + childNode.getNodeName() );
             }
         }
 
         if ( name == null )
         {
-            // TODO: throw an appropriate error
-            System.err
-                    .println( "Attribute tag did not contain the required name element" );
+            LOGGER.warning( "Attribute tag did not contain the required name element" );
         }
 
         return new TagAttributeInfo( name, required, type, rtexprvalue );
@@ -590,16 +583,13 @@ public class TagFileParser
             }
             else
             {
-                // TODO: throw an appropriate error
-                System.err.println( "Unknown element encountered" );
+                LOGGER.fine( "Unknown element encountered" );
             }
         }
 
         if ( validatorClass == null )
         {
-            // TODO: throw an appropriate error
-            System.err
-                    .println( "Validator tag did not contain the required validator-class element" );
+            LOGGER.warning( "Validator tag did not contain the required validator-class element" );
         }
     }
 
@@ -625,16 +615,13 @@ public class TagFileParser
             }
             else
             {
-                // TODO: throw an appropriate error
-                System.err.println( "Unknown element encountered" );
+                LOGGER.fine( "Unknown element encountered" );
             }
         }
 
         if ( listenerClass == null )
         {
-            // TODO: throw an appropriate error
-            System.err
-                    .println( "Listener tag did not contain the required listener-class element" );
+            LOGGER.warning( "Listener tag did not contain the required listener-class element" );
         }
     }
 
@@ -687,16 +674,13 @@ public class TagFileParser
             }
             else
             {
-                // TODO: throw an appropriate error
-                System.err.println( "Unknown element encountered" );
+                LOGGER.fine( "Unknown element encountered" );
             }
         }
 
         if ( nameGiven == null && nameFromAttribute == null )
         {
-            // TODO: throw an appropriate error
-            System.err
-                    .println( "Variable tag did not contain either the name-given or name-from-attribute element" );
+            LOGGER.warning( "Variable tag did not contain either the name-given or name-from-attribute element" );
         }
 
         return new TagVariableInfo( nameGiven, nameFromAttribute,
@@ -734,23 +718,18 @@ public class TagFileParser
             }
             else
             {
-                // TODO: throw an appropriate error
-                System.err.println( "Unknown element encountered" );
+                LOGGER.fine( "Unknown element encountered" );
             }
         }
 
         if ( paramName == null )
         {
-            // TODO: throw an appropriate error
-            System.err
-                    .println( "Variable tag did not contain either the required param-name element" );
+            LOGGER.warning( "Variable tag did not contain either the required param-name element" );
         }
 
         if ( paramValue == null )
         {
-            // TODO: throw an appropriate error
-            System.err
-                    .println( "Variable tag did not contain either the required param-value element" );
+            LOGGER.warning( "Variable tag did not contain either the required param-value element" );
         }
 
     }
@@ -781,8 +760,7 @@ public class TagFileParser
             }
             else
             {
-                // TODO: throw an appropriate error
-                System.err.println( "Unknown element encountered" );
+                LOGGER.fine( "Unknown element encountered" );
             }
         }
 
@@ -846,8 +824,7 @@ public class TagFileParser
             }
             else
             {
-                // TODO: throw an appropriate error
-                System.err.println( "Unknown element encountered" );
+                LOGGER.fine( "Unknown element encountered" );
             }
         }
     }
@@ -914,8 +891,7 @@ public class TagFileParser
             }
             else
             {
-                // TODO: throw an appropriate error
-                System.err.println( "Unknown element encountered" );
+                LOGGER.fine( "Unknown element encountered" );
             }
         }
     }
@@ -957,6 +933,7 @@ public class TagFileParser
 
     /**
      * Test code to confirm parsing of TLD files
+     * 
      * @deprecated
      * @param args
      * @throws Exception
@@ -967,6 +944,11 @@ public class TagFileParser
 
         TagLibraryInfo tld = TagFileParser.loadTagFile( f );
 
-        System.out.println( tld.getInfoString() );
+        TagInfo[] tags = tld.getTags();
+
+        for ( int tagIdx = 0; tagIdx < tags.length; tagIdx++ )
+        {
+            System.out.println( tags[tagIdx].getTagName() );
+        }
     }
 }
