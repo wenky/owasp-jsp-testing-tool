@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
-<title>${tagLibName} Report</title>
+<title>${tagLibName} ${tag.tagName} Report</title>
 </head>
 <style>
 iframe {
@@ -180,8 +180,6 @@ function runTest(name)
 
 <!-- Begin Tag Test Cases -->
 
-#foreach(${tag} in ${tagLib.tags})
-
 #foreach(${attack} in ${attacks})
 <div class="hidden" id="${tag.tagName}-${attack.name}-${frame_namespace}">
 <h1>${tag.tagName} - ${attack.displayName}</h1>
@@ -195,7 +193,6 @@ function runTest(name)
 <h1>${tag.tagName} - ${attribute.name} - ${attack.displayName}</h1>
 <iframe name="${tag.tagName}-${attribute.name}-${attack.name}-${frame_namespace}" src="${context_root}${tag.tagName}-${attribute.name}-${attack.name}${extension}" onload="runTest(this.name)"></iframe>
 </div>
-#end
 #end
 #end
 
