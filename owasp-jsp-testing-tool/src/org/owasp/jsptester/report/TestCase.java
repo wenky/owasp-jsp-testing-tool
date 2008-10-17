@@ -28,7 +28,10 @@
 package org.owasp.jsptester.report;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
 import javax.servlet.jsp.tagext.TagAttributeInfo;
@@ -62,15 +65,21 @@ public class TestCase
      * @return a String representing the valid JSP tag syntax for this test case
      */
     public static String generateTestCaseJspTag( TagLibraryInfo tagLibrary,
-            TagInfo tag, TagAttributeInfo attr, Attack attack )
+            TagInfo tag, TagAttributeInfo attr, Attack attack,
+            Map/* <TagAttributeInfo, String> */reqAttrs )
     {
         XML customTag = new XML( tagLibrary.getShortName() + ":"
                 + tag.getTagName() );
 
-        /*
-         * TODO: set required attributes
-         */
         customTag.addAttribute( attr.getName(), attack.getAttackString() );
+
+        for ( Iterator/* <TagAttributeInfo> */itr = reqAttrs.keySet()
+                .iterator(); itr.hasNext(); )
+        {
+            TagAttributeInfo reqAttr = (TagAttributeInfo) itr.next();
+            customTag.addAttribute( reqAttr.getName(), reqAttrs.get( reqAttr )
+                    .toString() );
+        }
         return customTag.toString();
     }
 
@@ -86,39 +95,23 @@ public class TestCase
      * @return a String representing the valid JSP tag syntax for this test case
      */
     public static String generateTagTextTestCaseJspTag(
-            TagLibraryInfo tagLibrary, TagInfo tag, Attack attack )
+            TagLibraryInfo tagLibrary, TagInfo tag, Attack attack,
+            Map/* <TagAttributeInfo, String> */reqAttrs )
     {
         XML customTag = new XML( tagLibrary.getShortName() + ":"
                 + tag.getTagName() );
-        /*
-         * TODO: set required attributes
-         */
-        customTag.setTagText( attack.getAttackString() );
-        return customTag.toString();
-    }
-
-    /**
-     * Returns a Set<TagAttributeInfo> of required attributes for the given tag
-     * 
-     * @param tag
-     *            the tag to obtain the required attributes for
-     * @return a Set<TagAttributeInfo> of required attributes for the given tag
-     */
-    private static Set/* <TagAttributeInfo> */getRequiredAttributes( TagInfo tag )
-    {
-        TagAttributeInfo[] attrs = tag.getAttributes();
 
         Set/* <TagAttributeInfo> */requiredAttrs = new HashSet/* <TagAttributeInfo> */();
-
-        for ( int attrIdx = 0; attrIdx < attrs.length; attrIdx++ )
+        for ( Iterator/* <TagAttributeInfo> */itr = reqAttrs.keySet()
+                .iterator(); itr.hasNext(); )
         {
-            if ( attrs[attrIdx].isRequired() )
-            {
-                requiredAttrs.add( attrs[attrIdx].getName() );
-            }
+            TagAttributeInfo reqAttr = (TagAttributeInfo) itr.next();
+            customTag.addAttribute( reqAttr.getName(), reqAttrs.get( reqAttr )
+                    .toString() );
         }
 
-        return requiredAttrs;
+        customTag.setTagText( attack.getAttackString() );
+        return customTag.toString();
     }
 
     /**
@@ -148,9 +141,9 @@ public class TestCase
                     Attack attack = attacks[attackIdx];
 
                     System.out.println( generateTagTextTestCaseJspTag(
-                            tagLibrary, tag, attack ) );
+                            tagLibrary, tag, attack , Collections.EMPTY_MAP ) );
                     System.out.println( generateTestCaseJspTag( tagLibrary,
-                            tag, attr, attack ) );
+                            tag, attr, attack, Collections.EMPTY_MAP ) );
                 }
             }
 

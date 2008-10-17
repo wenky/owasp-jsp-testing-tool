@@ -28,7 +28,6 @@
 package org.owasp.jsptester.conf;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -36,74 +35,161 @@ import java.util.Properties;
 
 /**
  * Encapsulates the configuration parameters for the JSP Tester
+ * 
  * @author Jason Li
  * 
  */
 public class Configuration
 {
+    /**
+     * The location of the attack library XML file
+     */
     public static final String ATTACK_LIBRARY = "ATTACK_LIBRARY";
 
+    /**
+     * The location where the document base for the embedded Tomcat instance
+     */
     public static final String EMBEDDED_DOC_BASE = "EMBEDDED_DOC_BASE";
+
+    /**
+     * The folder containing the web root for the embedded Tomcat instance
+     */
     public static final String EMBEDDED_WEB_ROOT = "EMBEDDED_WEB_ROOT";
+
+    /**
+     * The port number to use for the embedded Tomcat instance
+     */
     public static final String EMBEDDED_PORT_NUM = "EMBEDDED_PORT_NUM";
-    
-    public static final String TEMPLATE_REPORT = "REPORT_REPORT_TEMPLATE";
+
+    /**
+     * The library report template file
+     */
+    public static final String TEMPLATE_LIBRARY_REPORT = "REPORT_LIBRARY_REPORT_TEMPLATE";
+
+    /**
+     * The tag report template file
+     */
+    public static final String TEMPLATE_TAG_REPORT = "REPORT_TAG_REPORT_TEMPLATE";
+
+    /**
+     * The test case template file
+     */
     public static final String TEMPLATE_TEST_CASE = "REPORT_TEST_CASE_TEMPLATE";
+
+    /**
+     * The index.jsp file for the test site
+     */
     public static final String TEMPLATE_INDEX_JSP = "REPORT_INDEX_JSP";
+
+    /**
+     * The error.jsp (error handler) file for the test suite
+     */
     public static final String TEMPLATE_ERROR_JSP = "REPORT_ERROR_JSP";
+
+    /**
+     * Location of the template META-INF folder to use to build the web
+     * application using the tag library
+     */
     public static final String TEMPLATE_META_INF = "REPORT_META_INF_FOLDER";
+
+    /**
+     * Location of the template WEB-INF folder to use to build the web
+     * application using the tag library
+     */
     public static final String TEMPLATE_WEB_INF = "REPORT_WEB_INF_FOLDER";
-    
+
+    /**
+     * The context root of the web application
+     */
     public static final String REPORT_CONTEXT_ROOT = "REPORT_CONTEXT_ROOT";
+
+    /**
+     * The extension to use for the test case files
+     */
     public static final String REPORT_FILE_EXTENSION = "REPORT_FILE_EXTENSION";
+
+    /**
+     * The namespace to use when naming iframes in the report file
+     */
     public static final String REPORT_FRAME_NAMESPACE = "REPORT_FRAME_NAMESPACE";
 
+    /**
+     * The name to use for the tag library report file
+     */
+    public static final String REPORT_FILE_NAME = "REPORT_FILE_NAME";
+
     public static final String REPORT_TEST_PREFIX = "REPORT_TEST_PREFIX";
+
     public static final String REPORT_TEST_SUFFIX = "REPORT_TEST_SUFFIX";
 
+    public static final String REPORT_OUTPUT_DIR = "REPORT_OUTPUT_DIR";
+
     private static final Properties DEFAULTS = new Properties();
-        
+
     // set defaults for properties
-    static {
-        
-        DEFAULTS.setProperty( "ATTACK_LIBRARY", "resources/attacks.xml" );
-        
-        DEFAULTS.setProperty( EMBEDDED_DOC_BASE, "./report" );
-        DEFAULTS.setProperty( EMBEDDED_WEB_ROOT, "./report" );
+    static
+    {
+
+        DEFAULTS.setProperty( ATTACK_LIBRARY, "resources/attacks.xml" );
+
+        DEFAULTS.setProperty( EMBEDDED_DOC_BASE, System
+                .getProperty( "user.home" )
+                + File.separatorChar
+                + "Documents"
+                + File.separatorChar
+                + "JSP Testing Tool Output" + File.separatorChar + "report" );
+        DEFAULTS.setProperty( EMBEDDED_WEB_ROOT, System
+                .getProperty( "user.home" )
+                + File.separatorChar
+                + "Documents"
+                + File.separatorChar
+                + "JSP Testing Tool Output" + File.separatorChar + "report" );
         DEFAULTS.setProperty( EMBEDDED_PORT_NUM, "8096" );
-        
-        DEFAULTS.setProperty( TEMPLATE_REPORT, "template/report.vm" );
+
+        DEFAULTS.setProperty( TEMPLATE_LIBRARY_REPORT, "template/report.vm" );
+        DEFAULTS.setProperty( TEMPLATE_TAG_REPORT, "template/tag-report.vm" );
         DEFAULTS.setProperty( TEMPLATE_TEST_CASE, "template/testcase.vm" );
         DEFAULTS.setProperty( TEMPLATE_INDEX_JSP, "template/index.jsp" );
         DEFAULTS.setProperty( TEMPLATE_ERROR_JSP, "template/error.jsp" );
         DEFAULTS.setProperty( TEMPLATE_META_INF, "template/META-INF/" );
         DEFAULTS.setProperty( TEMPLATE_WEB_INF, "template/WEB-INF/" );
-        
-        DEFAULTS.setProperty( REPORT_CONTEXT_ROOT, "test/");
-        DEFAULTS.setProperty( REPORT_FILE_EXTENSION, ".jsp");
-        DEFAULTS.setProperty( REPORT_FRAME_NAMESPACE, "frame");
-        
+
+        DEFAULTS.setProperty( REPORT_CONTEXT_ROOT, "test/" );
+        DEFAULTS.setProperty( REPORT_FILE_EXTENSION, ".jsp" );
+        DEFAULTS.setProperty( REPORT_FRAME_NAMESPACE, "frame" );
+        DEFAULTS.setProperty( REPORT_FILE_NAME, "report.html" );
+        DEFAULTS.setProperty( REPORT_OUTPUT_DIR, System
+                .getProperty( "user.home" )
+                + File.separatorChar
+                + "Documents"
+                + File.separatorChar
+                + "JSP Testing Tool Output" + File.separatorChar + "output" );
+
         /*
          * TODO: this is a temporary hack to make it work wit JSF. Will
          * eventually have a UI component to allow custom prefix/suffix stuff
          */
-        DEFAULTS.setProperty( "REPORT_TEST_PREFIX", "<%@ taglib uri=\"http://java.sun.com/jsf/core\" prefix=\"f\" %>\n<f:view>");
-        DEFAULTS.setProperty( "REPORT_TEST_SUFFIX", "</f:view>");
-    }    
-    
+        DEFAULTS
+                .setProperty(
+                        "REPORT_TEST_PREFIX",
+                        "<%@ taglib uri=\"http://java.sun.com/jsf/core\" prefix=\"f\" %>\n<f:view>\n<h:form>" );
+        DEFAULTS.setProperty( "REPORT_TEST_SUFFIX", "</h:form></f:view>" );
+    }
+
     private static final Configuration INSTANCE = new Configuration();
+
     public static Configuration getInstance()
     {
         return INSTANCE;
     }
-    
+
     private final Properties config;
-    
+
     private Configuration()
     {
-        config = new Properties(DEFAULTS);
-    }    
-    
+        config = new Properties( DEFAULTS );
+    }
+
     /**
      * @param key
      * @param defaultValue
@@ -122,7 +208,7 @@ public class Configuration
      */
     public String getProperty( String key )
     {
-        return getProperty( key, DEFAULTS.getProperty( key ));
+        return getProperty( key, DEFAULTS.getProperty( key ) );
     }
 
     /**
@@ -144,5 +230,5 @@ public class Configuration
     {
         this.config.load( reader );
     }
-    
+
 }
