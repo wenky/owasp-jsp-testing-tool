@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+<comment>OWASP JSP Testing Tool Tag Properties</comment>
+<entry key="message-prefix">&lt;%@ taglib uri="http://java.sun.com/jsf/core" prefix="f" %&gt;
+&lt;f:view&gt;
+&lt;h:commandButton id="test"/&gt;</entry>
+<entry key="message.for">test</entry>
+<entry key="commandLink-prefix">&lt;%@ taglib uri="http://java.sun.com/jsf/core" prefix="f" %&gt;
+&lt;f:view&gt;
+&lt;h:form&gt;</entry>
+<entry key="commandLink-suffix">&lt;/h:form&gt;
+&lt;/f:view&gt;</entry>
+</properties>
