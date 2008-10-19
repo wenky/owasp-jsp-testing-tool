@@ -68,17 +68,28 @@ import org.owasp.jsptester.parser.TagFileParser;
 import org.xml.sax.SAXException;
 
 /**
+ * GUI to facilitate easy editing of tag property configuration files.
+ * 
  * @author Jason Li
  * 
  */
 public class TagPropertiesEditor extends JFrame
 {
 
+    /**
+     * Logger
+     */
     private static final Logger LOGGER = Logger
             .getLogger( TagPropertiesEditor.class.getName() );
 
+    /**
+     * Title for the window
+     */
     private static final String TITLE = "OWASP JSP Testing Tool - Tag Properties Editor";
 
+    /**
+     * Filter for TLD files
+     */
     private static final FileFilter TLD_FILE_FILTER = new FileFilter()
     {
 
@@ -87,7 +98,6 @@ public class TagPropertiesEditor extends JFrame
          * 
          * @see javax.swing.filechooser.FileFilter#accept(java.io.File)
          */
-        @Override
         public boolean accept( File f )
         {
             return f.isDirectory() || f.getName().endsWith( ".tld" );
@@ -98,7 +108,6 @@ public class TagPropertiesEditor extends JFrame
          * 
          * @see javax.swing.filechooser.FileFilter#getDescription()
          */
-        @Override
         public String getDescription()
         {
             return "Tag Library Description file";
@@ -106,6 +115,9 @@ public class TagPropertiesEditor extends JFrame
 
     };
 
+    /**
+     * Filter for tag property configuration file
+     */
     private static final FileFilter TPX_FILE_FILTER = new FileFilter()
     {
 
@@ -114,7 +126,6 @@ public class TagPropertiesEditor extends JFrame
          * 
          * @see javax.swing.filechooser.FileFilter#accept(java.io.File)
          */
-        @Override
         public boolean accept( File f )
         {
             return f.isDirectory() || f.getName().endsWith( ".tpx" );
@@ -125,7 +136,6 @@ public class TagPropertiesEditor extends JFrame
          * 
          * @see javax.swing.filechooser.FileFilter#getDescription()
          */
-        @Override
         public String getDescription()
         {
             return "Tag Properties XML file";
@@ -133,30 +143,65 @@ public class TagPropertiesEditor extends JFrame
 
     };
 
+    /**
+     * Currently loaded tag library
+     */
     private TagLibraryInfo tldInfo = null;
 
+    /**
+     * Currently loaded tag property configuration file
+     */
     private File tagFile = null;
 
+    /**
+     * Whether or not changes have been made to the tag properties
+     */
     private boolean dirty = false;
 
+    /**
+     * The tag properties
+     */
     private final TagProperties tagProperties = new TagProperties();
 
+    /**
+     * List model of tags in the currently loaded tag library
+     */
     private final DefaultListModel tagListModel = new DefaultListModel();
 
+    /**
+     * The panel for editing the current tag's configured properties
+     */
     private final JPanel tagPanel = new JPanel();
 
+    /**
+     * The file chooser used to save/open files
+     */
     private final JFileChooser fileChooser = new JFileChooser();
 
+    /**
+     * Creates an instance of the <code>TagPropertiesEditor</code>
+     */
     public TagPropertiesEditor()
     {
         super( TITLE );
 
+        // set the layout of the tag panel
+        tagPanel.setLayout( new GridBagLayout() );
+
+        // set the menubar
         setJMenuBar( buildMenuBar() );
 
+        // create the list of tags
         final JList tagList = new JList( tagListModel );
+
+        // use a custom renderer to show the tag name
         tagList.setCellRenderer( new TagInfoListCellRenderer( tagList
                 .getCellRenderer() ) );
+
+        // only one tag can be selected at a time
         tagList.setSelectionMode( ListSelectionModel.SINGLE_SELECTION );
+
+        // add a listener to modify the tag panel when a new tag is selected
         tagList.addListSelectionListener( new ListSelectionListener()
         {
 
@@ -174,15 +219,16 @@ public class TagPropertiesEditor extends JFrame
             }
         } );
 
-        tagPanel.setLayout( new GridBagLayout() );
-
+        // create a split panel with the tag list and the tag panel
         JSplitPane splitPane = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT );
         splitPane.setLeftComponent( new JScrollPane( tagList ) );
         splitPane.setRightComponent( new JScrollPane( tagPanel ) );
-
         getContentPane().add( splitPane );
 
+        // do not do terminate daemon thread on window close
         setDefaultCloseOperation( WindowConstants.DO_NOTHING_ON_CLOSE );
+
+        // instead, add a window listener to confirm exiting the app
         addWindowListener( new WindowAdapter()
         {
 
@@ -191,7 +237,6 @@ public class TagPropertiesEditor extends JFrame
              * 
              * @see java.awt.event.WindowAdapter#windowClosing(java.awt.event.WindowEvent)
              */
-            @Override
             public void windowClosing( WindowEvent e )
             {
                 exitApp();
@@ -200,11 +245,25 @@ public class TagPropertiesEditor extends JFrame
 
         } );
 
+        // cause validation and layout of current components
+        pack();
+
+        // set default appearance
+        splitPane.setDividerLocation( 0.45 );
         setSize( 425, 300 );
     }
 
+    /**
+     * Returns a <code>JMenuBar</code> populated with all the menu items for
+     * the tag properties editor GUI
+     * 
+     * @return a <code>JMenuBar</code> populated with all the menu items for
+     *         the tag properties editor GUI
+     */
     private JMenuBar buildMenuBar()
     {
+
+        // create the Open menu item
         JMenuItem open = new JMenuItem( "Open" );
         open.addActionListener( new ActionListener()
         {
@@ -221,6 +280,7 @@ public class TagPropertiesEditor extends JFrame
 
         } );
 
+        // create the Save menu item
         JMenuItem save = new JMenuItem( "Save" );
         save.addActionListener( new ActionListener()
         {
@@ -237,6 +297,7 @@ public class TagPropertiesEditor extends JFrame
 
         } );
 
+        // create the Save As menu item
         JMenuItem saveAs = new JMenuItem( "Save As" );
         saveAs.addActionListener( new ActionListener()
         {
@@ -253,6 +314,7 @@ public class TagPropertiesEditor extends JFrame
 
         } );
 
+        // create the Load TLD menu item
         JMenuItem load = new JMenuItem( "Load TLD" );
         load.addActionListener( new ActionListener()
         {
@@ -269,6 +331,7 @@ public class TagPropertiesEditor extends JFrame
 
         } );
 
+        // create the Exit menu item
         JMenuItem exit = new JMenuItem( "Exit" );
         exit.addActionListener( new ActionListener()
         {
@@ -285,6 +348,7 @@ public class TagPropertiesEditor extends JFrame
 
         } );
 
+        // create the File menu
         JMenu fileMenu = new JMenu( "File" );
         fileMenu.add( open );
         fileMenu.add( save );
@@ -294,7 +358,10 @@ public class TagPropertiesEditor extends JFrame
         fileMenu.addSeparator();
         fileMenu.add( exit );
 
+        // create the Help menu
         JMenu helpMenu = new JMenu( "Help" );
+
+        // create the About menu item
         JMenuItem about = new JMenuItem( "About" );
         about.addActionListener( new ActionListener()
         {
@@ -306,12 +373,16 @@ public class TagPropertiesEditor extends JFrame
              */
             public void actionPerformed( ActionEvent e )
             {
-
+                // TODO: create a better about box
+                JOptionPane.showMessageDialog( TagPropertiesEditor.this,
+                        "OWASP JSP Testing Tool", "About",
+                        JOptionPane.INFORMATION_MESSAGE );
             }
 
         } );
         helpMenu.add( about );
 
+        // create the menu bar and add the file and help menus
         JMenuBar menuBar = new JMenuBar();
         menuBar.add( fileMenu );
         menuBar.add( helpMenu );
@@ -319,11 +390,23 @@ public class TagPropertiesEditor extends JFrame
         return menuBar;
     }
 
+    /**
+     * Resets the tag panel to reflect the currently selected tag. Removes all
+     * items on the tag panel and creates text fields for the tag prefix, tag
+     * suffix and all tag attributes. These text fields are pre-populated with
+     * the current configuration values and if these values are changed, the tag
+     * properties are marked as dirty
+     * 
+     * @param tag
+     *            the currently selected tag
+     */
     private void populateTagPanel( final TagInfo tag )
     {
 
+        // remove all contents from the tag panel
         tagPanel.removeAll();
 
+        // if no tag is selected, remove the border on the tag panel
         if ( tag == null )
         {
             tagPanel.setBorder( BorderFactory.createEmptyBorder() );
@@ -332,15 +415,28 @@ public class TagPropertiesEditor extends JFrame
         }
 
         GridBagLayout layout = (GridBagLayout) tagPanel.getLayout();
-
         GridBagConstraints constraints = new GridBagConstraints();
 
+        // each text field should fill horizontal space, expand with the window
+        // and take up the entire "row"
         constraints.fill = GridBagConstraints.HORIZONTAL;
         constraints.weightx = 1;
         constraints.gridwidth = GridBagConstraints.REMAINDER;
 
+        /*
+         * TODO: consider some kind of Factory class/method for creating the
+         * text fields; also consider pooling text fields for re-use
+         */
+
+        // create the prefix text field
         final JTextArea prefix = new JTextArea();
+
+        // pre-populate with current configured value
         prefix.setText( tagProperties.getTagPrefix( tag.getTagName() ) );
+
+        // when focus is gained, note current value; when focus is lost, compare
+        // current value to noted value and if changed, change the tag
+        // properties and mark as dirty
         prefix.addFocusListener( new FocusAdapter()
         {
             private String text;
@@ -350,7 +446,6 @@ public class TagPropertiesEditor extends JFrame
              * 
              * @see java.awt.event.FocusAdapter#focusGained(java.awt.event.FocusEvent)
              */
-            @Override
             public void focusGained( FocusEvent e )
             {
                 this.text = prefix.getText();
@@ -361,7 +456,6 @@ public class TagPropertiesEditor extends JFrame
              * 
              * @see java.awt.event.FocusAdapter#focusLost(java.awt.event.FocusEvent)
              */
-            @Override
             public void focusLost( FocusEvent e )
             {
                 String newText = prefix.getText();
@@ -376,10 +470,17 @@ public class TagPropertiesEditor extends JFrame
 
         } );
 
+        // the text field background is white so setting the border
+        // directly on the text field looks weird. create a containing box and
+        // use this container for the border
         Box prefixPanel = Box.createVerticalBox();
         prefixPanel.add( prefix );
+
+        // set the border around the containing box as prefix to show what this
+        // text box is for
         prefixPanel.setBorder( BorderFactory.createTitledBorder( "prefix" ) );
 
+        // suffix text field follows the same process as prefix
         final JTextArea suffix = new JTextArea();
         suffix.setText( tagProperties.getTagSuffix( tag.getTagName() ) );
         suffix.addFocusListener( new FocusAdapter()
@@ -391,7 +492,6 @@ public class TagPropertiesEditor extends JFrame
              * 
              * @see java.awt.event.FocusAdapter#focusGained(java.awt.event.FocusEvent)
              */
-            @Override
             public void focusGained( FocusEvent e )
             {
                 this.text = suffix.getText();
@@ -402,7 +502,6 @@ public class TagPropertiesEditor extends JFrame
              * 
              * @see java.awt.event.FocusAdapter#focusLost(java.awt.event.FocusEvent)
              */
-            @Override
             public void focusLost( FocusEvent e )
             {
                 String newText = suffix.getText();
@@ -424,15 +523,18 @@ public class TagPropertiesEditor extends JFrame
         layout.setConstraints( prefixPanel, constraints );
         layout.setConstraints( suffixPanel, constraints );
 
+        // add prefix and suffix to tag panel
         tagPanel.add( prefixPanel );
         tagPanel.add( suffixPanel );
 
         TagAttributeInfo[] attrs = tag.getAttributes();
 
+        // loop over each of the tag's attributes
         for ( int attrIdx = 0; attrIdx < attrs.length; attrIdx++ )
         {
             final TagAttributeInfo attr = attrs[attrIdx];
 
+            // create a text field using same process as prefix
             final JTextField textField = new JTextField();
             textField.setText( tagProperties.getTagProperty( tag.getTagName(),
                     attr.getName() ) );
@@ -445,11 +547,10 @@ public class TagPropertiesEditor extends JFrame
                  * 
                  * @see java.awt.event.FocusAdapter#focusGained(java.awt.event.FocusEvent)
                  */
-                @Override
                 public void focusGained( FocusEvent e )
                 {
                     this.text = textField.getText();
-                    LOGGER.info( tag.getTagName() + "-" + attr.getName()
+                    LOGGER.fine( tag.getTagName() + "-" + attr.getName()
                             + " has value '" + text + "'" );
                 }
 
@@ -468,7 +569,7 @@ public class TagPropertiesEditor extends JFrame
                     {
                         tagProperties.setTagProperty( tag.getTagName(), attr
                                 .getName(), textField.getText() );
-                        LOGGER.info( tag.getTagName() + "-" + attr.getName()
+                        LOGGER.fine( tag.getTagName() + "-" + attr.getName()
                                 + " has new value '" + newText + "'" );
                         setDirty( true );
                     }
@@ -499,19 +600,34 @@ public class TagPropertiesEditor extends JFrame
         validate();
     }
 
+    /**
+     * Populate the list model with the tags from the currently loaded tag
+     * library
+     */
     private void populateTagListModel()
     {
+        // remove all current elements from the list
         tagListModel.clear();
 
+        // get the tag library's tags
         TagInfo[] tags = tldInfo.getTags();
+
+        // iterate over all tags in library
         for ( int tagIdx = 0; tagIdx < tags.length; tagIdx++ )
         {
+            // add each tag to the list model
             tagListModel.addElement( tags[tagIdx] );
         }
     }
 
+    /**
+     * Exit the application. If the tag properties configuration has changed,
+     * first asks the user if they want to save changes. Also confirms that the
+     * user really wants to exit the application.
+     */
     private void exitApp()
     {
+        // if changes have been made, prompt to see if user wants to save
         if ( dirty )
         {
             int response = JOptionPane
@@ -522,17 +638,25 @@ public class TagPropertiesEditor extends JFrame
                             "Save", JOptionPane.YES_NO_CANCEL_OPTION,
                             JOptionPane.QUESTION_MESSAGE );
 
-            if (response == JOptionPane.YES_OPTION) {
+            // if user wants to save, save
+            if ( response == JOptionPane.YES_OPTION )
+            {
                 save();
-            } else if (response == JOptionPane.CANCEL_OPTION ) {
+            }
+            // if user cancel's, stop exit
+            else if ( response == JOptionPane.CANCEL_OPTION )
+            {
                 return;
             }
+            // otherwise, user doesn't want to save and wants to exit
         }
 
+        // prompt the user to confirm exit
         int response = JOptionPane.showConfirmDialog( this,
                 "Are you sure you want to exit?", "Confirm",
                 JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE );
 
+        // if the user says yes, exit the application
         if ( response == JOptionPane.YES_OPTION )
         {
             System.exit( 0 );
@@ -540,45 +664,80 @@ public class TagPropertiesEditor extends JFrame
 
     }
 
+    /**
+     * Displays an open file dialog for the user to choose the tag properties
+     * configuration file
+     */
     private void open()
     {
+        // set file chooser's filter to tag properties configuration file
         fileChooser.resetChoosableFileFilters();
         fileChooser.addChoosableFileFilter( TPX_FILE_FILTER );
+
+        // show the file chooser
         int response = fileChooser.showOpenDialog( this );
+
+        // if the user chooses a file, load that tag properties configuration
+        // file
         if ( response == JFileChooser.APPROVE_OPTION )
         {
-            try
-            {
-                tagFile = fileChooser.getSelectedFile();
-                tagProperties.load( tagFile );
-                setDirty( false );
-            }
-            catch ( IOException ioe )
-            {
-                LOGGER.throwing( TagPropertiesEditor.class.getName(), "open",
-                        ioe );
-                JOptionPane.showMessageDialog( this,
-                        "Error opening properties file", "Error",
-                        JOptionPane.ERROR_MESSAGE );
-            }
+            openTpxFile( fileChooser.getSelectedFile() );
         }
-
-        tagPanel.removeAll();
-        tagPanel.validate();
     }
 
+    /**
+     * Loads the given tag properties configuration file.
+     * 
+     * @param file
+     *            the tag properties configuration file to load
+     */
+    private void openTpxFile( File file )
+    {
+        try
+        {
+            // load the file
+            tagProperties.load( file );
+
+            // set the current file to the newly loaded file
+            tagFile = file;
+
+            // mark as unchanged
+            setDirty( false );
+
+            // clear the tag panel and force redraw
+            tagPanel.removeAll();
+            tagPanel.validate();
+        }
+        catch ( IOException ioe )
+        {
+            LOGGER.throwing( this.getName(), "openTpxFile(File)", ioe );
+            JOptionPane.showMessageDialog( this,
+                    "Error opening properties File", "Error",
+                    JOptionPane.ERROR_MESSAGE );
+        }
+    }
+
+    /**
+     * Saves the current state of the tag properties configuration to the
+     * currently loaded file
+     */
     private void save()
     {
+        // if no file is loaded, prompt the user for a file to save to
         if ( tagFile == null )
         {
             saveAs();
         }
+        // otherwise, save to current file
         else
         {
 
             try
             {
+                // save changes
                 tagProperties.save( tagFile );
+
+                // mark as unchanged
                 setDirty( false );
             }
             catch ( IOException ioe )
@@ -592,27 +751,48 @@ public class TagPropertiesEditor extends JFrame
         }
     }
 
+    /**
+     * Displays a save file dialog for the user to choose the location to save
+     * the tag properties configuration file to
+     */
     private void saveAs()
     {
+
+        // set file chooser's filter to tag properties configuration file
         fileChooser.resetChoosableFileFilters();
         fileChooser.addChoosableFileFilter( TPX_FILE_FILTER );
+
+        // show the file chooser
         int response = fileChooser.showSaveDialog( this );
+
+        // if the user chooses a file, then execute save
         if ( response == JFileChooser.APPROVE_OPTION )
         {
+            // set the currently selected file
             tagFile = fileChooser.getSelectedFile();
+
+            // if non-null, execute save
             if ( tagFile != null )
             {
                 save();
-                setDirty( false );
             }
         }
     }
 
+    /**
+     * Displays an open file dialog for the user to choose the tag library
+     * definition file to load
+     */
     private void load()
     {
+        // set file chooser's filter to tag library definition files
         fileChooser.resetChoosableFileFilters();
         fileChooser.addChoosableFileFilter( TLD_FILE_FILTER );
+
+        // show the file chooser
         int response = fileChooser.showOpenDialog( this );
+
+        // if the user chooses a file, then load the TLD file
         if ( response == JFileChooser.APPROVE_OPTION )
         {
             loadTldFile( fileChooser.getSelectedFile() );
@@ -620,8 +800,20 @@ public class TagPropertiesEditor extends JFrame
 
     }
 
+    /**
+     * Marks the GUI indicating whether or not the tag properties has changed.
+     * This alters the title of the window.
+     * 
+     * @param dirty
+     *            whether or not the tag properties has changed
+     */
     private void setDirty( boolean dirty )
     {
+        /*
+         * TODO: really should have a property change listener on the
+         * TagProperties class and this class as a listener to determine dirty
+         * status
+         */
         this.dirty = dirty;
 
         if ( dirty )
@@ -637,8 +829,15 @@ public class TagPropertiesEditor extends JFrame
         }
     }
 
+    /**
+     * Loads the given TLD file.
+     * 
+     * @param tldFile
+     *            the TLD file to load
+     */
     private void loadTldFile( File tldFile )
     {
+        // do sanity checking to ensure the file exists and is a file
         if ( !tldFile.exists() || tldFile.exists() && !tldFile.isFile() )
         {
             JOptionPane.showMessageDialog( this,
@@ -648,7 +847,11 @@ public class TagPropertiesEditor extends JFrame
 
         try
         {
+            // load the TLD file
             tldInfo = TagFileParser.loadTagFile( tldFile );
+
+            // populate the list of tags from the new tag library
+            populateTagListModel();
         }
         catch ( IOException ioe )
         {
@@ -665,15 +868,36 @@ public class TagPropertiesEditor extends JFrame
 
             return;
         }
-
-        populateTagListModel();
     }
 
+    /**
+     * Launches the GUI based on the optional command line arguments:
+     * <ol>
+     * <li>tag properties configuration file </li>
+     * <li>tag library file</li>
+     * </ol>
+     * 
+     * @param args
+     *            command line arguments
+     */
     public static void main( String[] args )
     {
         TagPropertiesEditor tpe = new TagPropertiesEditor();
-        tpe.loadTldFile( new File( "./resources/html_basic.tld" ) );
 
+        // if first argument is present, load the given tag properties
+        // configuration file
+        if ( args[0] != null )
+        {
+            tpe.openTpxFile( new File( args[0] ) );
+        }
+
+        // if the second argument is present, load the given tag library file
+        if ( args[1] != null )
+        {
+            tpe.loadTldFile( new File( args[1] ) );
+        }
+
+        // display the GUI
         tpe.setVisible( true );
     }
 }

@@ -39,17 +39,29 @@ import javax.servlet.jsp.tagext.TagInfo;
 import org.owasp.jsptester.conf.TagProperties;
 
 /**
+ * Utility class that provides convenience methods for tags and tag attributes
+ * 
  * @author Jason Li
  * 
  */
 public class TagLibraryUtils
 {
 
+    /**
+     * Returns true if the given tag has required attributes; false otherwise
+     * 
+     * @param tag
+     *            the tag to check
+     * @return true if the given tag has required attributes; false otherwise
+     */
     public static boolean hasRequiredAttributes( TagInfo tag )
     {
         TagAttributeInfo[] attrs = tag.getAttributes();
+
+        // loop through the tags attributes
         for ( int attrIdx = 0; attrIdx < attrs.length; attrIdx++ )
         {
+            // if the attribute is required, return true
             if ( attrs[attrIdx].isRequired() )
             {
                 return true;
@@ -60,18 +72,24 @@ public class TagLibraryUtils
     }
 
     /**
-     * Returns a Set<TagAttributeInfo> of required attributes for the given tag
+     * Returns a <code>Set&lt;TagAttributeInfo&gt;</code> of required
+     * attributes for the given tag
      * 
      * @param tag
      *            the tag to obtain the required attributes for
-     * @return a Set<TagAttributeInfo> of required attributes for the given tag
+     * @return a <code>Set&lt;TagAttributeInfo&gt;</code> of required
+     *         attributes for the given tag
      */
     public static Set/* <TagAttributeInfo> */getRequiredAttributes( TagInfo tag )
     {
         Set/* <TagAttributeInfo> */reqAttrs = new HashSet/* <TagAttributeInfo> */();
+
         TagAttributeInfo[] attrs = tag.getAttributes();
+
+        // loop through the tags attributes
         for ( int attrIdx = 0; attrIdx < attrs.length; attrIdx++ )
         {
+            // if the attribute is required, add it to the set
             if ( attrs[attrIdx].isRequired() )
             {
                 reqAttrs.add( attrs[attrIdx] );
@@ -80,6 +98,17 @@ public class TagLibraryUtils
         return reqAttrs;
     }
 
+    /**
+     * Returns a <code>Map&lt;TagAttributeInfo, String&gt;</code> of required
+     * attributes to the values in the given tag properties (if configured)
+     * 
+     * @param tag
+     *            the tag to retrieve the map for
+     * @param tagProperties
+     *            the tag properties to use
+     * @return a <code>Map&lt;TagAttributeInfo, String&gt;</code> of required
+     *         attributes to the values
+     */
     public static Map/* <TagAttributeInfo, String> */getRequiredAttributesMap(
             TagInfo tag, TagProperties tagProperties )
     {
@@ -87,10 +116,13 @@ public class TagLibraryUtils
 
         Set/* <TagAttributeInfo> */reqAttrs = getRequiredAttributes( tag );
 
+        // loop over required attributes
         for ( Iterator/* <TagAttributeInfo> */itr = reqAttrs.iterator(); itr
                 .hasNext(); )
         {
             TagAttributeInfo reqAttr = (TagAttributeInfo) itr.next();
+
+            // if attribute is configured, put in value in map
             if ( tagProperties.hasTagProperty( tag.getTagName(), reqAttr
                     .getName() ) )
             {

@@ -31,7 +31,7 @@ package org.owasp.jsptester.report;
  * Utility class to construct stack traces for the template error.jsp page.
  * 
  * @author Jason Li
- *
+ * 
  */
 public class ErrorHandler
 {
@@ -51,9 +51,9 @@ public class ErrorHandler
      * a tooltip
      * 
      * @param throwable
-     *            the throwable to create the stack trace for
-     * @return a text representation of a throwable's stack trace formatted for
-     *         a tooltip
+     *            the <code>Throwable</code> to create the stack trace for
+     * @return a text representation of a <code>Throwable</code>'s stack
+     *         trace formatted for a tooltip
      */
     public static String buildTooltipStackTrace( Throwable throwable )
     {
