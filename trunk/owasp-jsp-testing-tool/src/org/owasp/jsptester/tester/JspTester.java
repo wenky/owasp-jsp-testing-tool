@@ -28,21 +28,19 @@
 package org.owasp.jsptester.tester;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
-import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.servlet.jsp.tagext.TagInfo;
 import javax.servlet.jsp.tagext.TagLibraryInfo;
 
+import org.apache.catalina.LifecycleException;
 import org.apache.commons.io.FileUtils;
 import org.owasp.jsptester.attack.Attack;
 import org.owasp.jsptester.attack.AttackLibrary;
@@ -52,28 +50,69 @@ import org.owasp.jsptester.exec.EmbeddedServer;
 import org.owasp.jsptester.exec.TestCaseSerializer;
 import org.owasp.jsptester.parser.TagFileParser;
 import org.owasp.jsptester.report.ReportGenerator;
+import org.xml.sax.SAXException;
 
 /**
+ * Main class that ties all the functionality together. The executable parses
+ * the given library using an attack library and generates tests for the entire
+ * tag library or an individual tag and serializes the test cases.
+ * 
  * @author Jason Li
  * 
  */
 public class JspTester
 {
 
+    /**
+     * Logger
+     */
     private static final Logger LOGGER = Logger.getLogger( JspTester.class
             .getName() );
 
+    /**
+     * The tag library to test
+     */
     private TagLibraryInfo tagLibrary;
 
+    /**
+     * The properties file to use for testing
+     */
     private TagProperties tagProperties;
 
+    /**
+     * The list of attacks to try
+     */
     private Attack[] attacks;
 
+    /**
+     * The report generator to use
+     */
     private ReportGenerator reportGenerator;
 
+    /**
+     * Creates an instance of the JSPTester with the given tag library and tag
+     * property file locations
+     * 
+     * @param libraryFileLocation
+     *            the location of the tag library file
+     * @param tagPropsFileLocation
+     *            the location of the tag property file
+     * @throws IOException
+     *             if an I/O error occurs
+     * @throws SAXException
+     *             if an error occurs parsing the tag library file
+     */
     public JspTester( String libraryFileLocation, String tagPropsFileLocation )
-            throws Exception
+            throws SAXException, IOException
     {
+        LOGGER.entering( JspTester.class.getName(), "JspTester", new Object[]
+            { libraryFileLocation, tagPropsFileLocation } );
+
+        LOGGER.fine( "Verifying existence of tag library file." );
+        LOGGER.finer( "\tTag library file: " + libraryFileLocation );
+
+        // verify that if the tag library file exists, it's a file and not a
+        // directory
         File libraryFile = new File( libraryFileLocation );
         if ( !libraryFile.exists() || libraryFile.exists()
                 && !libraryFile.isFile() )
@@ -82,6 +121,19 @@ public class JspTester
                     "The specified TLD file does not exists" );
         }
 
+        // parse the tag library file
+        tagLibrary = TagFileParser.loadTagFile( libraryFile );
+
+        LOGGER.fine( "Loaded tag library file" );
+        LOGGER
+                .finer( "\tUsing library file: "
+                        + libraryFile.getCanonicalPath() );
+
+        LOGGER.fine( "Verifying existence of tag properties file." );
+        LOGGER.finer( "\tTag properties file: " + tagPropsFileLocation );
+
+        // verify that if the tag properties file exists, it's a file and not a
+        // directory
         File tagPropsFile = new File( tagPropsFileLocation );
         if ( !tagPropsFile.exists() || tagPropsFile.exists()
                 && !tagPropsFile.isFile() )
@@ -90,26 +142,50 @@ public class JspTester
                     "The specified tag properties file does not exists" );
         }
 
+        // load the tag properties file
         tagProperties = new TagProperties();
         tagProperties.load( tagPropsFile );
 
-        tagLibrary = TagFileParser.loadTagFile( libraryFile );
+        LOGGER.fine( "Loaded tag properties file" );
+        LOGGER.finer( "\tUsing properties file: "
+                + tagPropsFile.getCanonicalPath() );
 
+        // get the attack library
         attacks = AttackLibrary.getInstance().getAttacks();
 
+        LOGGER.finer( "Obtained attack library" );
+
+        // get the report generator
         reportGenerator = ReportGenerator.getInstance();
+
+        LOGGER.finer( "Obtained report generator" );
+
+        LOGGER.exiting( JspTester.class.getName(), "JspTester" );
     }
 
-    private File initOutputDir( String outputDirLocation ) throws Exception
+    /**
+     * Performs sanity checks on the output directory and creates the directory
+     * if necessary
+     * 
+     * @param outputDirLocation
+     *            the output directory location
+     * @return a <code>File</code> object representing the output directory
+     * @throws IOException
+     *             if an I/O error occurs
+     */
+    private File initOutputDir( String outputDirLocation ) throws IOException
     {
-        LOGGER.entering( JspTester.class.getName(), "initOutputDir(String)" );
+        LOGGER.entering( JspTester.class.getName(), "initOutputDir",
+                outputDirLocation );
 
+        // verify that if the output directory exists, it is not a file
         File outputDir = new File( outputDirLocation );
         if ( outputDir.exists() && !outputDir.isDirectory() )
         {
             throw new IllegalArgumentException(
                     "The specified output directory is a file." );
         }
+        // create the directory if it does not exist
         else if ( !outputDir.exists() )
         {
             if ( !outputDir.mkdirs() )
@@ -117,25 +193,40 @@ public class JspTester
                 throw new IOException( "Unable to create directories" );
             }
 
-            LOGGER.fine( "Output directory [" + outputDir.getAbsolutePath()
+            LOGGER.fine( "Output directory [" + outputDir.getCanonicalPath()
                     + "] created" );
         }
 
-        LOGGER.exiting( JspTester.class.getName(), "initOutputDir(String)" );
+        LOGGER.exiting( JspTester.class.getName(), "initOutputDir", outputDir );
 
         return outputDir;
     }
 
-    private void serializeTests( List/* <File> */files ) throws Exception
+    /**
+     * Serializes the test cases by downloading the processed test case from the
+     * embedded Tomcat instance
+     * 
+     * @param files
+     *            the <code>List&lt;File&gt;</code> of files to serialize
+     * @throws IOException
+     *             if an I/O error occurs
+     * @throws LifecycleException
+     *             if an error occurs starting, stopping or restarting the
+     *             embedded Tomcat instance
+     */
+    private void serializeTests( List/* <File> */files ) throws IOException,
+            LifecycleException
     {
-        LOGGER.entering( JspTester.class.getName(), "serializeTests(List)" );
+        LOGGER.entering( JspTester.class.getName(), "serializeTests", files );
 
+        // Start the embedded Tomcat instance
         LOGGER.fine( "Starting server..." );
         EmbeddedServer server = new EmbeddedServer();
         server.start();
 
         LOGGER.fine( "Server started" );
 
+        // create the context root directory for the test cases
         File reportOut = new File( Configuration.getInstance().getProperty(
                 Configuration.REPORT_OUTPUT_DIR )
                 + File.separatorChar
@@ -147,11 +238,14 @@ public class JspTester
 
         int counter = 0;
 
-        for ( Iterator i = files.iterator(); i.hasNext(); counter++ )
+        // loop over each of the files to be serialized
+        for ( Iterator/* <File> */i = files.iterator(); i.hasNext(); counter++ )
         {
             try
             {
                 File f = (File) i.next();
+
+                // construct the URL for the test case
                 URL test = new URL( "http://localhost:"
                         + Configuration.getInstance().getProperty(
                                 Configuration.EMBEDDED_PORT_NUM )
@@ -160,16 +254,21 @@ public class JspTester
                                 Configuration.REPORT_CONTEXT_ROOT )
                         + f.getName() );
                 LOGGER.finer( "Using URL: " + test );
-                TestCaseSerializer tcs = new TestCaseSerializer( test );
 
-                tcs.serialize( new File( reportOut, f.getName() ) );
+                // serialize the URL
+                TestCaseSerializer.serialize( test, new File( reportOut, f
+                        .getName() ) );
             }
-            catch ( Exception e )
+            catch ( URISyntaxException urise )
             {
                 LOGGER.throwing( this.getClass().getName(),
-                        "testLibrary(String)", e );
+                        "testLibrary(String)", urise );
             }
 
+            /*
+             * To ensure out of memory exceptions do not occur, whenever the
+             * memory is getting low, restart the embedded Tomcat server
+             */
             LOGGER.finer( "Free Memory: " + Runtime.getRuntime().freeMemory() );
             if ( Runtime.getRuntime().freeMemory() < 1000000 )
             {
@@ -177,51 +276,61 @@ public class JspTester
                         + Runtime.getRuntime().freeMemory() + ". Made "
                         + counter + " iterations. Server restarting..." );
                 counter = 0;
+
+                // stop the server
                 server.stop();
                 server = null;
+
+                // hint the JVM to garbage collect
                 System.gc();
+
+                // start a new server
                 server = new EmbeddedServer();
                 server.start();
                 LOGGER.info( "Restarted" );
             }
         }
 
-        LOGGER.exiting( JspTester.class.getName(), "serializeTests(List)" );
+        LOGGER.exiting( JspTester.class.getName(), "serializeTests" );
     }
 
-    public void testLibrary( String outputDirLocation ) throws Exception
+    /**
+     * Generates a report that tests the entire tag library
+     * 
+     * @param outputDirLocation
+     *            the location of the output directory
+     * @throws IOException
+     *             if an I/O error occurs
+     * @throws LifecycleException
+     *             if an error occurs starting, stopping or restarting the
+     *             embedded Tomcat instance
+     */
+    public void testLibrary( String outputDirLocation ) throws IOException,
+            LifecycleException
     {
-        LOGGER.entering( JspTester.class.getName(), "testLibrary(String)" );
+        LOGGER.entering( JspTester.class.getName(), "testLibrary",
+                outputDirLocation );
 
+        // initialize the output directory
         File outputDir = this.initOutputDir( outputDirLocation );
 
+        LOGGER.fine( "Initialized output directory." );
+        LOGGER.finer( "\tOutput directory: " + outputDir.getCanonicalPath() );
+
+        // generate the test case files
         List/* <File> */files = reportGenerator.generateLibraryReport(
                 tagLibrary, tagProperties, attacks, outputDir );
 
-        // TEMP
-//        File reportDir = new File( Configuration.getInstance().getProperty(
-//                Configuration.EMBEDDED_DOC_BASE ) );
-//        File[] reportDirFiles = reportDir.listFiles( new FilenameFilter()
-//        {
-//
-//            /*
-//             * (non-Javadoc)
-//             * 
-//             * @see java.io.FilenameFilter#accept(java.io.File,
-//             *      java.lang.String)
-//             */
-//            public boolean accept( File dir, String name )
-//            {
-//                return name.endsWith( Configuration.getInstance().getProperty(
-//                        Configuration.REPORT_FILE_EXTENSION ) );
-//            }
-//
-//        } );
-//        List files = Arrays.asList( reportDirFiles );
-        // END TEMP
+        LOGGER.fine( "Generated test case files." );
+        LOGGER.finer( "\tTest case files: " + files );
 
+        // load the test cases into the embedded Tomcat instance and serialize
+        // them
         serializeTests( files );
 
+        LOGGER.fine( "Serialized test cases" );
+
+        // copy the report file to the output location
         FileUtils.copyFileToDirectory( new File( Configuration.getInstance()
                 .getProperty( Configuration.EMBEDDED_DOC_BASE )
                 + File.separatorChar
@@ -230,75 +339,115 @@ public class JspTester
                 Configuration.getInstance().getProperty(
                         Configuration.REPORT_OUTPUT_DIR ) ) );
 
+        LOGGER.fine( "Copied report file." );
+
         LOGGER.exiting( JspTester.class.getName(), "testLibrary" );
     }
 
+    /**
+     * Generates a report that tests the one tag from the tag library
+     * 
+     * @param outputDirLocation
+     *            the location of the output directory
+     * @param tagName
+     *            the name of the tag to test
+     * @throws IOException
+     *             if an I/O error occurs
+     * @throws LifecycleException
+     *             if an error occurs starting, stopping or restarting the
+     *             embedded Tomcat instance
+     */
     public void testTag( String outputDirLocation, String tagName )
-            throws Exception
+            throws IOException, LifecycleException
     {
-        LOGGER.entering( JspTester.class.getName(), "testTag(String, String" );
+        LOGGER.entering( JspTester.class.getName(), "testTag", new Object[]
+            { outputDirLocation, tagName } );
 
+        // Initialize the output directory
         File outputDir = this.initOutputDir( outputDirLocation );
 
+        LOGGER.fine( "Initialized output directory." );
+        LOGGER.finer( "\tOutput directory: " + outputDir.getCanonicalPath() );
+
+        // get the tag to test
         TagInfo tag = tagLibrary.getTag( tagName );
 
+        // verify the tag exists
         if ( tag == null )
         {
             throw new IllegalArgumentException( tagName
                     + " not found in tag library" );
         }
 
+        LOGGER.fine( "Testing tag: " + tag );
+
+        // generate the test case files
         List/* <File> */files = reportGenerator.generateTagReport( tagLibrary,
                 tagProperties, tag, attacks, outputDir );
 
+        LOGGER.fine( "Generated test case files." );
+        LOGGER.finer( "\tTest case files: " + files );
+
+        // load the test cases into the embedded Tomcat instance and serialize
+        // them
         serializeTests( files );
 
-        LOGGER.exiting( JspTester.class.getName(), "testTag(String, String" );
+        LOGGER.fine( "Serialized test cases" );
+
+        // copy the report file to the output location
+        FileUtils.copyFileToDirectory( new File( Configuration.getInstance()
+                .getProperty( Configuration.EMBEDDED_DOC_BASE )
+                + File.separatorChar + tag.getTagName() + ".html" ), new File(
+                Configuration.getInstance().getProperty(
+                        Configuration.REPORT_OUTPUT_DIR ) ) );
+
+        LOGGER.exiting( JspTester.class.getName(), "testTag" );
     }
 
     /**
+     * Runs the JSP Tester on the given tag/tag library based on the command
+     * line arguments:
+     * <ol>
+     * <li>tag library file</li>
+     * <li>tag properties file</li>
+     * <li>name of the tag to test; if null, test the entire tag library</li>
+     * </ol>
+     * 
+     * 
      * @param args
+     *            command line arguments
      */
     public static void main( String[] args ) throws Exception
     {
-        String tagName = args[0];
+
+        String tldFile = args[0];
+        String tagPropsFile = args[1];
+        String tagName = args[2];
 
         FileHandler fHandler = null;
-        FileHandler attrHandler = null;
         try
         {
-            Handler handler = new ConsoleHandler();
-            handler.setLevel( Level.INFO );
-            Logger.getLogger( "" ).setLevel( Level.ALL );
-//            Logger.getLogger( "" ).addHandler( handler );
+            Logger.getLogger( "" ).setLevel( Level.INFO );
 
-            fHandler = new FileHandler( System.getProperty( "user.home" )
-                    + File.separatorChar + "Documents" + File.separatorChar
-                    + "JSP Testing Tool Output" + File.separatorChar + tagName
-                    + "-log.txt" );
-            fHandler.setLevel( Level.INFO );
-            Logger.getLogger( "" ).addHandler( fHandler );
+            // fHandler = new FileHandler( tagName + "-log.txt" );
+            // fHandler.setLevel( Level.INFO );
+            // Logger.getLogger( "" ).addHandler( fHandler );
 
-            attrHandler = new FileHandler( System.getProperty( "user.home" )
-                    + File.separatorChar + "Documents" + File.separatorChar
-                    + "JSP Testing Tool Output" + File.separatorChar
-                    + "req-attr-log.txt", true );
-            attrHandler.setLevel( Level.SEVERE );
-            Logger.getLogger( "" ).addHandler( attrHandler );
-
-            String tldFile = "resources/html_basic.tld";
-            String tagPropsFile = "resources/html_basic.tpx";
             String outputDir = Configuration.getInstance().getProperty(
                     Configuration.EMBEDDED_DOC_BASE );
 
             JspTester tester = new JspTester( tldFile, tagPropsFile );
-            tester.testLibrary( outputDir );
-            // tester.testTag( outputDir, tagName );
-        }
-        catch ( OutOfMemoryError oome )
-        {
-            LOGGER.severe( "Out of Memory" );
-            System.exit( -1 );
+
+            // if no tag name is provided, test whole library
+            if ( tagName == null )
+            {
+                tester.testLibrary( outputDir );
+            }
+            // otherwise, test individual tag
+            else
+            {
+                tester.testTag( outputDir, tagName );
+            }
         }
         finally
         {

@@ -28,6 +28,8 @@
 package org.owasp.jsptester.exec;
 
 import java.io.File;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.catalina.Context;
 import org.apache.catalina.Engine;
@@ -38,48 +40,99 @@ import org.apache.catalina.startup.Embedded;
 import org.owasp.jsptester.conf.Configuration;
 
 /**
+ * Encapsulates operations involving the embedded Tomcat server
+ * 
  * @author Jason Li
  * 
  */
 public class EmbeddedServer
 {
 
-    Embedded server;
+    /**
+     * Default Tomcat port number
+     */
+    public static final int DEFAULT_PORT = 8096;
 
+    /**
+     * Logger
+     */
+    private static final Logger LOGGER = Logger.getLogger( EmbeddedServer.class
+            .getName() );
+
+    /**
+     * The embedded Tomcat server
+     */
+    private Embedded server;
+
+    /**
+     * Returns the document base for the server
+     * 
+     * @return the document base for the server
+     */
     private static String getDocBaseDir()
     {
         return ( new File( Configuration.getInstance().getProperty(
                 Configuration.EMBEDDED_DOC_BASE ) ) ).getAbsolutePath();
     }
 
+    /**
+     * Returns the web root to use for the server
+     * 
+     * @return the web root to use for the server
+     */
     private static String getWebRoot()
     {
         return new File( Configuration.getInstance().getProperty(
                 Configuration.EMBEDDED_WEB_ROOT ) ).getAbsolutePath();
     }
 
+    /**
+     * Returns the port number to use for the embedded Tomcat server
+     * 
+     * @return the port number to use for the embedded Tomcat server
+     */
     private static int getPortNum()
     {
-        return Integer.parseInt( Configuration.getInstance().getProperty(
-                Configuration.EMBEDDED_PORT_NUM ) );
+        int port = DEFAULT_PORT;
+        try
+        {
+            port = Integer.parseInt( Configuration.getInstance().getProperty(
+                    Configuration.EMBEDDED_PORT_NUM ) );
+        }
+        catch ( NumberFormatException nfe )
+        {
+            LOGGER.log( Level.INFO, "Configuration port number is "
+                    + "not a valid port number. Using default port number ("
+                    + DEFAULT_PORT + ")", nfe );
+        }
+
+        return port;
     }
 
+    /**
+     * Creates an instance of <code>EmbeddedServer</code>
+     */
     public EmbeddedServer()
     {
         init();
     }
 
+    /**
+     * Initializes the embedded Tomcat server
+     */
     private void init()
     {
+        LOGGER.entering( EmbeddedServer.class.getName(), "init" );
+        
         // instantiate a new instance of Embedded class
         server = new Embedded();
 
-        // set relevant properties
+        // TODO: set relevant properties
 
         // call create engine
         Engine engine = server.createEngine();
 
-        // set relevant engine properties
+        // TODO: set relevant engine properties
 
         // Create host
         Host host = server.createHost( "localhost", getDocBaseDir() );
@@ -88,42 +141,67 @@ public class EmbeddedServer
         engine.addChild( host );
         engine.setDefaultHost( "localhost" );
 
+        // create server context
         Context context = server.createContext( "", getWebRoot() );
 
+        // add context to host
         host.addChild( context );
 
+        // add engine to server
         server.addEngine( engine );
 
+        // create net connector
         Connector connector = server.createConnector( "127.0.0.1",
                 getPortNum(), false );
 
+        // add connector
         server.addConnector( connector );
+        
+        LOGGER.exiting( EmbeddedServer.class.getName(), "init" );
     }
 
     /**
+     * Starts the embedded Tomcat server
+     * 
      * @throws LifecycleException
      * @see org.apache.catalina.startup.Embedded#start()
      */
     public void start() throws LifecycleException
     {
+        LOGGER.fine( "Starting embedded Tomcat server" );
+        
         this.server.start();
+        
+        LOGGER.fine( "Started embedded Tomcat server" );
     }
 
     /**
+     * Stops the embedded Tomcat server
+     * 
      * @throws LifecycleException
      * @see org.apache.catalina.startup.Embedded#stop()
      */
     public void stop() throws LifecycleException
     {
+        LOGGER.fine( "Stopping embedded Tomcat server" );
+        
         this.server.stop();
+        
+        LOGGER.fine( "Stopped embedded Tomcat server" );
     }
 
+    /**
+     * Test code
+     * 
+     * @deprecated
+     */
     public static void main( String[] args ) throws Exception
     {
         EmbeddedServer es = new EmbeddedServer();
         es.init();
         es.start();
 
+        // keep the server running for 10 minutes
         Thread.sleep( 600000 );
 
     }

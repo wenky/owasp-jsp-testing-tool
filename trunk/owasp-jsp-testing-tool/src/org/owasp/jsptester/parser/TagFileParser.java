@@ -51,7 +51,7 @@ import org.xml.sax.SAXException;
 
 /**
  * Encapsulates the logic to parse a TLD file and create an instance of
- * TagLibraryInfo.
+ * <code>TagLibraryInfoImpl</code>.
  * 
  * @author Jason Li
  * 
@@ -59,6 +59,9 @@ import org.xml.sax.SAXException;
 public class TagFileParser
 {
 
+    /**
+     * Logger
+     */
     private static Logger LOGGER = Logger.getLogger( TagFileParser.class
             .getName() );
 
@@ -70,16 +73,17 @@ public class TagFileParser
     }
 
     /**
-     * Returns an instance of TagLibraryInfo created by loading the given TLD
-     * file
+     * Returns an instance of <code>TagLibraryInfo</code> created by loading
+     * the given TLD file
      * 
      * @param tldFile
      *            the TLD file to load
-     * @return an instance of TagLibraryInfo created by loading the given TLD
-     *         file
-     * @throws ParserConfigurationException
+     * @return an instance of TagLibraryInfo</code> created by loading the
+     *         given TLD file
      * @throws SAXException
+     *             if an error occurs parsing the XML
      * @throws IOException
+     *             if an I/O error occurs
      */
     public static TagLibraryInfo loadTagFile( File tldFile )
             throws SAXException, IOException
@@ -102,6 +106,8 @@ public class TagFileParser
         // Load and parse the file.
         dom = db.parse( tldFile );
 
+        LOGGER.fine( "Parsed the TLD XML" );
+
         // Get the root element (tag-lib) of the XML document
         Element taglib = dom.getDocumentElement();
 
@@ -109,16 +115,19 @@ public class TagFileParser
     }
 
     /**
-     * Returns an instance of TagLibraryInfo created from parsing the given
-     * tag-lib element
+     * Returns an instance of <code>TagLibraryInfo</code> created from parsing
+     * the given tag-lib element
      * 
      * @param taglib
      *            the tag-lib element to parse
-     * @return an instance of TagLibraryInfo created from parsing the given
-     *         tag-lib element
+     * @return an instance of <code>TagLibraryInfo</code> created from parsing
+     *         the given tag-lib element
      */
     private static TagLibraryInfo parseTagLibElement( Element taglib )
     {
+        LOGGER.entering( TagFileParser.class.getName(), "parseTagLibElement",
+                taglib );
+
         // JSP 1.1 elements to parse
         String tlibVersion = null;
         String jspVersion = null;
@@ -276,22 +285,22 @@ public class TagFileParser
         // Verify that the TLD file contained the required tlib version
         if ( tlibVersion == null )
         {
-            LOGGER
-                    .warning( "TagLib element without required tlibversion element encountered" );
+            LOGGER.warning( "TagLib element without required tlibversion"
+                    + " element encountered" );
         }
 
         // Verify that the TLD file contained the required short name version
         if ( shortName == null )
         {
-            LOGGER
-                    .warning( "TagLib element without required shortname element encountered" );
+            LOGGER.warning( "TagLib element without required shortname"
+                    + " element encountered" );
         }
 
         // Verify the TLD file contained at least one tag definition
         if ( tagNodes.size() < 1 )
         {
-            LOGGER
-                    .warning( "TagLib element without required tag element encountered" );
+            LOGGER.warning( "TagLib element without required tag"
+                    + " element encountered" );
         }
 
         // technically jsp-version is required in JSP 1.2 but since it's not
@@ -315,23 +324,30 @@ public class TagFileParser
 
         tagLibraryInfo.setTags( tags );
 
+        LOGGER.exiting( TagFileParser.class.getName(), "parseTagLibElement",
+                tagLibraryInfo );
+
         return tagLibraryInfo;
     }
 
     /**
-     * Returns an instance of the TagInfo class created from the given tag node
-     * using the given TagLibraryInfo
+     * Returns an instance of the <code>TagInfo</code> class created from the
+     * given tag node using the given <code>TagLibraryInfo</code>
      * 
      * @param tag
      *            the tag node to parse
      * @param tagLibraryInfo
-     *            the TagLibraryInfo this tag will be part of
-     * @return an instance of the TagInfo class created from the given tag node
-     *         using the given TagLibraryInfo
+     *            the <code>TagLibraryInfo this tag will be part of
+     * @return an instance of the <code>TagInfo</code> class created from the
+     *         given tag node using the given <code>TagLibraryInfo</code>
      */
     private static TagInfo parseTagElement( Node tag,
             TagLibraryInfo tagLibraryInfo )
     {
+        LOGGER.entering( TagFileParser.class.getName(), "parseTagElement",
+                new Object[]
+                    { tag, tagLibraryInfo } );
+
         // JSP 1.1 elements
         String name = null;
         String tagClass = null;
@@ -468,28 +484,46 @@ public class TagFileParser
         // Verify the tag node had the required name element
         if ( name == null )
         {
-            LOGGER.warning( "Tag element without required name element encountered" );
+            LOGGER.warning( "Tag element without required name"
+                    + " element encountered" );
         }
 
         // Verify the tag node had the required tagclass/tag-class element
         if ( tagClass == null )
         {
-            LOGGER
-                    .warning( "Tag element without required tagclass element encountered" );
+            LOGGER.warning( "Tag element without required tagclass"
+                    + " element encountered" );
         }
 
-        // TODO: have to do something for TagExtraInfo
-        return new TagInfo( name, tagClass, bodyContent, info, tagLibraryInfo,
-                null, (TagAttributeInfo[]) attributes
+        TagInfo toReturn = new TagInfo( name, tagClass, bodyContent, info,
+                tagLibraryInfo, null, (TagAttributeInfo[]) attributes
                         .toArray( new TagAttributeInfo[attributes.size()] ),
                 displayName, smallIcon, largeIcon,
                 (TagVariableInfo[]) variables
                         .toArray( new TagVariableInfo[variables.size()] ),
                 dynamicAttributes );
+
+        LOGGER.exiting( TagFileParser.class.getName(), "parseTagElement",
+                toReturn );
+
+        // TODO: have to do something for TagExtraInfo
+        return toReturn;
     }
 
+    /**
+     * Returns an instance of the <code>TagAttributeInfo</code> class created
+     * from the given tag attribute node
+     * 
+     * @param attribute
+     *            the attribute node to parse
+     * @return an instance of the <code>TagAttributeInfo</code> class created
+     *         from the given tag attribute node
+     */
     private static TagAttributeInfo parseAttributeElement( Node attribute )
     {
+        LOGGER.entering( TagFileParser.class.getName(),
+                "parseAttributeElement", attribute );
+
         NodeList nodes = attribute.getChildNodes();
 
         String name = null;
@@ -543,14 +577,30 @@ public class TagFileParser
 
         if ( name == null )
         {
-            LOGGER.warning( "Attribute tag did not contain the required name element" );
+            LOGGER.warning( "Attribute tag did not contain the required "
+                    + "name element" );
         }
 
-        return new TagAttributeInfo( name, required, type, rtexprvalue );
+        TagAttributeInfo toReturn = new TagAttributeInfo( name, required, type,
+                rtexprvalue );
+
+        LOGGER.exiting( TagFileParser.class.getName(), "parseAttributeElement",
+                toReturn );
+
+        return toReturn;
     }
 
+    /**
+     * Parses the given validator node
+     * 
+     * @param validator
+     *            the validator node to parse
+     */
     private static void parseValidatorElement( Node validator )
     {
+        LOGGER.entering( TagFileParser.class.getName(),
+                "parseValidatorElement", validator );
+
         NodeList nodes = validator.getChildNodes();
 
         String validatorClass = null;
@@ -589,12 +639,27 @@ public class TagFileParser
 
         if ( validatorClass == null )
         {
-            LOGGER.warning( "Validator tag did not contain the required validator-class element" );
+            LOGGER.warning( "Validator tag did not contain the required "
+                    + "validator-class element" );
         }
+
+        // TODO: need to do something with the validator info
+
+        LOGGER.exiting( TagFileParser.class.getName(), "parseValidatorElement" );
     }
 
-    private static void parseListenerElement( Node listener )
+    /**
+     * Returns the listener from the given listener node
+     * 
+     * @param listener
+     *            the listener node to parse
+     * @return the listener from the given listener node
+     */
+    private static String parseListenerElement( Node listener )
     {
+        LOGGER.entering( TagFileParser.class.getName(), "parseListenerElement",
+                listener );
+
         NodeList nodes = listener.getChildNodes();
 
         String listenerClass = null;
@@ -621,12 +686,31 @@ public class TagFileParser
 
         if ( listenerClass == null )
         {
-            LOGGER.warning( "Listener tag did not contain the required listener-class element" );
+            LOGGER.warning( "Listener tag did not contain the required"
+                    + " listener-class element" );
         }
+
+        LOGGER.exiting( TagFileParser.class.getName(), "parseListenerElement",
+                listenerClass );
+
+        return listenerClass;
     }
 
+    /**
+     * Returns an instance of the <code>TagVariableInfo</code> class created
+     * from the given variable node
+     * 
+     * @param variable
+     *            the variable node to parse
+     * @return an instance of the <code>TagVariableInfo</code> class created
+     *         from the given variable node
+     */
     private static TagVariableInfo parseVariableElement( Node variable )
     {
+
+        LOGGER.entering( TagFileParser.class.getName(), "parseVariableElement",
+                variable );
+
         NodeList nodes = variable.getChildNodes();
 
         String nameGiven = null;
@@ -680,15 +764,32 @@ public class TagFileParser
 
         if ( nameGiven == null && nameFromAttribute == null )
         {
-            LOGGER.warning( "Variable tag did not contain either the name-given or name-from-attribute element" );
+            LOGGER.warning( "Variable tag did not contain either "
+                    + "the name-given or name-from-attribute element" );
         }
 
-        return new TagVariableInfo( nameGiven, nameFromAttribute,
-                variableClass, declare, parseScopeType( scope ) );
+        TagVariableInfo toReturn = new TagVariableInfo( nameGiven,
+                nameFromAttribute, variableClass, declare,
+                parseScopeType( scope ) );
+
+        LOGGER.exiting( TagFileParser.class.getName(), "parseVariableElement",
+                toReturn );
+
+        return toReturn;
     }
 
+    /**
+     * Returns the init parameter from the given initParam node.
+     * 
+     * @param initParam
+     *            the init parameter node to parse
+     * @return the init parameter from the given initParam node
+     */
     private static void parseInitParamElement( Node initParam )
     {
+        LOGGER.entering( TagFileParser.class.getName(),
+                "parseInitParamElement", initParam );
+
         NodeList nodes = initParam.getChildNodes();
 
         String paramName = null;
@@ -724,18 +825,32 @@ public class TagFileParser
 
         if ( paramName == null )
         {
-            LOGGER.warning( "Variable tag did not contain either the required param-name element" );
+            LOGGER.warning( "Variable tag did not contain "
+                    + "either the required param-name element" );
         }
 
         if ( paramValue == null )
         {
-            LOGGER.warning( "Variable tag did not contain either the required param-value element" );
+            LOGGER.warning( "Variable tag did not contain "
+                    + "either the required param-value element" );
         }
 
+        LOGGER.exiting( TagFileParser.class.getName(), "parseInitParamElement" );
     }
 
+    /**
+     * Returns a <code>String[]</code> parsed from the icon node. The first
+     * element is the small icon, the second element is the large icon
+     * 
+     * @param icon
+     *            the icon node
+     * @return a <code>String[]</code> parsed from the icon node
+     */
     private static String[] parseIconElement( Node icon )
     {
+        LOGGER.entering( TagFileParser.class.getName(), "parseIconElement",
+                icon );
+
         NodeList nodes = icon.getChildNodes();
 
         String smallIcon = null;
@@ -764,12 +879,25 @@ public class TagFileParser
             }
         }
 
-        return new String[]
+        String[] toReturn = new String[]
             { smallIcon, largeIcon };
+        LOGGER.exiting( TagFileParser.class.getName(), "parseIconElement",
+                toReturn );
+
+        return toReturn;
     }
 
+    /**
+     * Parses the given tag file node.
+     * 
+     * @param tagFile
+     *            the tag file node to parse
+     */
     private static void parseTagFileElement( Node tagFile )
     {
+        LOGGER.entering( TagFileParser.class.getName(), "parseTagFileElement",
+                tagFile );
+
         NodeList nodes = tagFile.getChildNodes();
 
         String description = null;
@@ -827,10 +955,22 @@ public class TagFileParser
                 LOGGER.fine( "Unknown element encountered" );
             }
         }
+
+        LOGGER.exiting( TagFileParser.class.getName(), "parseTagFileElement" );
+
     }
 
+    /**
+     * Parses the function node
+     * 
+     * @param function
+     *            the function node
+     */
     private static void parseFunctionElement( Node function )
     {
+        LOGGER.entering( TagFileParser.class.getName(), "parseFunctionElement",
+                function );
+
         NodeList nodes = function.getChildNodes();
 
         String description = null;
@@ -894,23 +1034,63 @@ public class TagFileParser
                 LOGGER.fine( "Unknown element encountered" );
             }
         }
+
+        LOGGER.exiting( TagFileParser.class.getName(), "parseFunctionElement" );
     }
 
+    /**
+     * Parse the tag lib extension node
+     * 
+     * @param tagLibExtension
+     *            the tag lib extension node
+     */
     private static void parseTagLibExtensionElement( Node tagLibExtension )
     {
+        LOGGER.entering( TagFileParser.class.getName(),
+                "parseTagLibExtensionElement", tagLibExtension );
 
+        // TODO: parse the tag lib extension
+
+        LOGGER.exiting( TagFileParser.class.getName(),
+                "parseTagLibExtensionElement" );
     }
 
+    /**
+     * Parse the extension node
+     * 
+     * @param extension
+     *            the extension node
+     */
     private static void parseExtensionElement( Node extension )
     {
+        LOGGER.entering( TagFileParser.class.getName(),
+                "parseExtensionElement", extension );
+
+        // TODO: parse the extension element
+
+        LOGGER.exiting( TagFileParser.class.getName(), "parseExtensionElement" );
 
     }
 
+    /**
+     * Returns true if the given value is "true" or "yes"; false otherwise
+     * 
+     * @param value
+     *            the value
+     * @return true if the given value is "true" or "yes"; false otherwise
+     */
     private static boolean parseTldBoolean( String value )
     {
         return ( "true".equals( value ) || "yes".equals( value ) );
     }
 
+    /**
+     * Returns the proper scope type corresponding to the given value
+     * 
+     * @param value
+     *            the value
+     * @return the proper scope type corresponding to the given value
+     */
     private static int parseScopeType( String value )
     {
         if ( "AT_BEGIN".equals( value ) )
@@ -926,6 +1106,15 @@ public class TagFileParser
         return VariableInfo.NESTED;
     }
 
+    /**
+     * Returns the trimmed <code>String</code> of the given value or null if
+     * the value is null
+     * 
+     * @param value
+     *            the value
+     * @return the trimmed <code>String</code> of the given value or null if
+     *         the value is null
+     */
     private static String parseElementString( String value )
     {
         return ( value == null ? null : value.trim() );

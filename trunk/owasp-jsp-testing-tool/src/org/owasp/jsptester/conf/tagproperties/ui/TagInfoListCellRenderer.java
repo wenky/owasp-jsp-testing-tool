@@ -35,39 +35,67 @@ import javax.swing.JList;
 import javax.swing.ListCellRenderer;
 
 /**
+ * List cell renderer that allows JList to render a <code>TagInfo</code>
+ * element. Functions as a wrapper (adapter) by using the given
+ * <code>ListCellRenderer</code> (<code>ListCellRenderer</code> if non
+ * provided) and populating the cell with the <code>String</code> name of the
+ * tag.
+ * 
  * @author Jason Li
- *
+ * 
  */
 public class TagInfoListCellRenderer implements ListCellRenderer
 {
 
+    /**
+     * The list cell renderer to use for rendering
+     */
     private ListCellRenderer listCellRenderer;
-    
+
+    /**
+     * Creates a <code>TagInfoListCellRenderer</code> using an instance of
+     * <code>DefaultListCellRenderer</code>.
+     */
     public TagInfoListCellRenderer()
     {
         listCellRenderer = new DefaultListCellRenderer();
     }
-    
-    public TagInfoListCellRenderer(ListCellRenderer renderer)
+
+    /**
+     * Creates a <code>TagInfoListCellRenderer</code> using the given list
+     * cell renderer
+     * 
+     * @param renderer
+     *            the list cell renderer to use
+     */
+    public TagInfoListCellRenderer( ListCellRenderer renderer )
     {
         this.listCellRenderer = renderer;
     }
-    
-    /* (non-Javadoc)
-     * @see javax.swing.DefaultListCellRenderer#getListCellRe-)ndererComponent(javax.swing.JList, java.lang.Object, int, boolean, boolean)
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see javax.swing.DefaultListCellRenderer#getListCellRe-)ndererComponent(javax.swing.JList,
+     *      java.lang.Object, int, boolean, boolean)
      */
     public Component getListCellRendererComponent( JList list, Object value,
             int index, boolean isSelected, boolean cellHasFocus )
     {
-        if (value instanceof TagInfo) {
-            value = ((TagInfo) value).getTagName();
+        // if the value to render is an instance of TagInfo, the value to
+        // be rendered is the name of the tag
+        if ( value instanceof TagInfo )
+        {
+            value = ( (TagInfo) value ).getTagName();
         }
-        return listCellRenderer.getListCellRendererComponent( list, value, index, isSelected,
-                cellHasFocus );
+        return listCellRenderer.getListCellRendererComponent( list, value,
+                index, isSelected, cellHasFocus );
     }
 
     /**
-     * @return the listCellRenderer
+     * Returns the list cell renderer being used
+     * 
+     * @return the list cell renderer being used
      */
     public ListCellRenderer getListCellRenderer()
     {
@@ -75,13 +103,14 @@ public class TagInfoListCellRenderer implements ListCellRenderer
     }
 
     /**
-     * Sets the listCellRenderer to the value specified by listCellRenderer
-     *
-     * @param listCellRenderer the listCellRenderer to set
+     * Sets the list cell renderer to be used to the given value
+     * 
+     * @param listCellRenderer
+     *            the list cell renderer to use
      */
     public void setListCellRenderer( ListCellRenderer listCellRenderer )
     {
         this.listCellRenderer = listCellRenderer;
     }
-    
+
 }

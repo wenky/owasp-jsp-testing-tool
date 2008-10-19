@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -53,10 +54,17 @@ import org.xml.sax.SAXException;
  */
 public class AttackLibrary
 {
+
     /**
-     * Map<String, Attack> of name of attack to Attack instance
+     * Logger
      */
-    private final Map attacks = new HashMap();
+    private static final Logger LOGGER = Logger.getLogger( AttackLibrary.class
+            .getName() );
+
+    /**
+     * Map*lt;String, Attack&gt; of name of attack to Attack instance
+     */
+    private final Map/* <String, Attack> */attacks = new HashMap();
 
     /**
      * Constructs an instance of an AttackLibrary
@@ -74,7 +82,8 @@ public class AttackLibrary
      */
     public static AttackLibrary getInstance()
     {
-        return getInstance( Configuration.getInstance().getProperty( Configuration.ATTACK_LIBRARY ) );
+        return getInstance( Configuration.getInstance().getProperty(
+                Configuration.ATTACK_LIBRARY ) );
     }
 
     /**
@@ -99,7 +108,7 @@ public class AttackLibrary
      */
     public Attack[] getAttacks()
     {
-        Collection values = attacks.values();
+        Collection/* <Attack> */values = attacks.values();
         return (Attack[]) values.toArray( new Attack[values.size()] );
     }
 
@@ -112,13 +121,22 @@ public class AttackLibrary
      */
     public String getAttackString( String name )
     {
+        LOGGER
+                .entering( AttackLibrary.class.getName(), "getAttackString",
+                        name );
+
+        String toReturn = null;
+
         Attack attack = (Attack) attacks.get( name );
         if ( attack != null )
         {
-            return attack.getAttackString();
+            toReturn = attack.getAttackString();
         }
 
-        return null;
+        LOGGER.exiting( AttackLibrary.class.getName(), "getAttackString",
+                toReturn );
+
+        return toReturn;
     }
 
     /**
@@ -132,6 +150,9 @@ public class AttackLibrary
      */
     private static AttackLibrary parseAttackFile( String attackFile )
     {
+        LOGGER.entering( AttackLibrary.class.getName(), "parseAttackFile",
+                attackFile );
+
         // Create a new instance of the attack library
         AttackLibrary toReturn = new AttackLibrary();
 
@@ -180,19 +201,22 @@ public class AttackLibrary
         }
         catch ( ParserConfigurationException pce )
         {
-            // TODO: proper error handling
-            pce.printStackTrace();
+            LOGGER.throwing( AttackLibrary.class.getName(),
+                    "parseAttackFile(String)", pce );
         }
         catch ( SAXException se )
         {
-            // TODO: proper error handling
-            se.printStackTrace();
+            LOGGER.throwing( AttackLibrary.class.getName(),
+                    "parseAttackFile(String)", se );
         }
         catch ( IOException ioe )
         {
-            // TODO: proper error handling
-            ioe.printStackTrace();
+            LOGGER.throwing( AttackLibrary.class.getName(),
+                    "parseAttackFile(String)", ioe );
         }
+
+        LOGGER.exiting( AttackLibrary.class.getName(), "parseAttackFile",
+                toReturn );
 
         // return the created instance of the attack library
         return toReturn;
@@ -211,6 +235,9 @@ public class AttackLibrary
      */
     private static Attack parseAttackNode( Node attack ) throws SAXException
     {
+        LOGGER.entering( AttackLibrary.class.getName(), "parseAttackNode",
+                attack );
+
         // Get the attack's child nodes
         NodeList nodes = attack.getChildNodes();
 
@@ -272,8 +299,12 @@ public class AttackLibrary
                     "attack node missing required attack-string" );
         }
 
-        // return a new Attack instance from the parsed parameters
-        return new Attack( name, displayName, attackString );
+        // create a new Attack instance from the parsed parameters
+        Attack toReturn = new Attack( name, displayName, attackString );
+
+        LOGGER.exiting( AttackLibrary.class.getName(), "parseAttackNode",
+                toReturn );
+        return toReturn;
     }
 
     /**

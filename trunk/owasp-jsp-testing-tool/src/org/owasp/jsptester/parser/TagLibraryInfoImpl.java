@@ -31,45 +31,82 @@ import javax.servlet.jsp.tagext.TagInfo;
 import javax.servlet.jsp.tagext.TagLibraryInfo;
 
 /**
+ * Concrete implementation of the <code>TagLibrary</code> class.
+ * 
  * @author Jason Li
- *
+ * 
  */
-public class TagLibraryInfoImpl extends TagLibraryInfo {
+public class TagLibraryInfoImpl extends TagLibraryInfo
+{
 
-	/**
-	 * @param prefix
-	 * @param uri
-	 */
-	public TagLibraryInfoImpl(String prefix, String uri) {
-		super(prefix, uri);
-		
-		shortname = prefix;
-	}
+    /**
+     * Creates an instance of the <code>TagLibraryInfoImpl</code> with the
+     * given prefix and uri.
+     * 
+     * @param prefix
+     *            the tag prefix
+     * @param uri
+     *            the tag library uri
+     */
+    TagLibraryInfoImpl( String prefix, String uri )
+    {
+        super( prefix, uri );
 
-	/* (non-Javadoc)
-	 * @see javax.servlet.jsp.tagext.TagLibraryInfo#getTagLibraryInfos()
-	 */
-	public TagLibraryInfo[] getTagLibraryInfos() {
-		return new TagLibraryInfo[] { this };
-	}
+        shortname = prefix;
+    }
 
-	void setTags(TagInfo[] newTags)
-	{
-		tags = newTags;
-	}
-	
-	void setTlibVersion(String newTlibVersion)
-	{
-		tlibversion = newTlibVersion;
-	}
-	
-	void setJspVersion(String newJspVersion)
-	{
-		jspversion = newJspVersion;
-	}
-	
-	void setInfo(String newInfo)
-	{
-		info = newInfo;
-	}
+    /*
+     * (non-Javadoc)
+     * 
+     * @see javax.servlet.jsp.tagext.TagLibraryInfo#getTagLibraryInfos()
+     */
+    public TagLibraryInfo[] getTagLibraryInfos()
+    {
+        return new TagLibraryInfo[]
+            { this };
+    }
+
+    /**
+     * Sets the library's tags
+     * 
+     * @param newTags
+     *            the libary's tags
+     */
+    void setTags( TagInfo[] newTags )
+    {
+        tags = newTags;
+    }
+
+    /**
+     * Sets the version of the tag library
+     * 
+     * @param newTlibVersion
+     *            the tag library version
+     */
+    void setTlibVersion( String newTlibVersion )
+    {
+        tlibversion = newTlibVersion;
+    }
+
+    /**
+     * Sets the JSP version
+     * 
+     * @param newJspVersion
+     *            the JSP version
+     */
+    void setJspVersion( String newJspVersion )
+    {
+        jspversion = newJspVersion;
+    }
+
+    /**
+     * Sets the information for the tag library
+     * 
+     * @param newInfo
+     *            the information for the tag library
+     */
+    void setInfo( String newInfo )
+    {
+        info = newInfo;
+    }
 }

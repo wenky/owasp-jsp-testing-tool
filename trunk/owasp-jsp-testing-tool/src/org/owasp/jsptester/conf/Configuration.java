@@ -33,6 +33,8 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.util.Properties;
 
+import org.owasp.jsptester.exec.EmbeddedServer;
+
 /**
  * Encapsulates the configuration parameters for the JSP Tester
  * 
@@ -118,10 +120,13 @@ public class Configuration
      */
     public static final String REPORT_FILE_NAME = "REPORT_FILE_NAME";
 
-    public static final String REPORT_TEST_PREFIX = "REPORT_TEST_PREFIX";
+    // public static final String REPORT_TEST_PREFIX = "REPORT_TEST_PREFIX";
+    //
+    // public static final String REPORT_TEST_SUFFIX = "REPORT_TEST_SUFFIX";
 
-    public static final String REPORT_TEST_SUFFIX = "REPORT_TEST_SUFFIX";
-
+    /**
+     * The directory to use for output
+     */
     public static final String REPORT_OUTPUT_DIR = "REPORT_OUTPUT_DIR";
 
     private static final Properties DEFAULTS = new Properties();
@@ -133,18 +138,15 @@ public class Configuration
         DEFAULTS.setProperty( ATTACK_LIBRARY, "resources/attacks.xml" );
 
         DEFAULTS.setProperty( EMBEDDED_DOC_BASE, System
-                .getProperty( "user.home" )
-                + File.separatorChar
-                + "Documents"
+                .getProperty( "java.io.tmpdir" )
                 + File.separatorChar
                 + "JSP Testing Tool Output" + File.separatorChar + "report" );
         DEFAULTS.setProperty( EMBEDDED_WEB_ROOT, System
-                .getProperty( "user.home" )
-                + File.separatorChar
-                + "Documents"
+                .getProperty( "java.io.tmpdir" )
                 + File.separatorChar
                 + "JSP Testing Tool Output" + File.separatorChar + "report" );
-        DEFAULTS.setProperty( EMBEDDED_PORT_NUM, "8096" );
+        DEFAULTS.setProperty( EMBEDDED_PORT_NUM, String
+                .valueOf( EmbeddedServer.DEFAULT_PORT ) );
 
         DEFAULTS.setProperty( TEMPLATE_LIBRARY_REPORT, "template/report.vm" );
         DEFAULTS.setProperty( TEMPLATE_TAG_REPORT, "template/tag-report.vm" );
@@ -159,9 +161,7 @@ public class Configuration
         DEFAULTS.setProperty( REPORT_FRAME_NAMESPACE, "frame" );
         DEFAULTS.setProperty( REPORT_FILE_NAME, "report.html" );
         DEFAULTS.setProperty( REPORT_OUTPUT_DIR, System
-                .getProperty( "user.home" )
-                + File.separatorChar
-                + "Documents"
+                .getProperty( "java.io.tmpdir" )
                 + File.separatorChar
                 + "JSP Testing Tool Output" + File.separatorChar + "output" );
 
@@ -169,51 +169,64 @@ public class Configuration
          * TODO: this is a temporary hack to make it work wit JSF. Will
          * eventually have a UI component to allow custom prefix/suffix stuff
          */
-        DEFAULTS
-                .setProperty(
-                        "REPORT_TEST_PREFIX",
-                        "<%@ taglib uri=\"http://java.sun.com/jsf/core\" prefix=\"f\" %>\n<f:view>\n<h:form>" );
-        DEFAULTS.setProperty( "REPORT_TEST_SUFFIX", "</h:form></f:view>" );
+        // DEFAULTS
+        // .setProperty(
+        // "REPORT_TEST_PREFIX",
+        // "<%@ taglib uri=\"http://java.sun.com/jsf/core\" prefix=\"f\"
+        // %>\n<f:view>\n<h:form>" );
+        // DEFAULTS.setProperty( "REPORT_TEST_SUFFIX", "</h:form></f:view>" );
     }
 
+    /**
+     * The singleton instance of the configuration
+     */
     private static final Configuration INSTANCE = new Configuration();
 
+    /**
+     * Returns the singleton instance of the configuration
+     * 
+     * @return the singleton instance of the configuration
+     */
     public static Configuration getInstance()
     {
         return INSTANCE;
     }
 
+    /**
+     * The configuration properties
+     */
     private final Properties config;
 
+    /**
+     * Creates an instance of <code>Configuration</code>
+     */
     private Configuration()
     {
         config = new Properties( DEFAULTS );
     }
 
     /**
+     * Returns the configuration value for the given key, using the default if
+     * unavailable
+     * 
      * @param key
-     * @param defaultValue
-     * @return
-     * @see java.util.Properties#getProperty(java.lang.String, java.lang.String)
-     */
-    public String getProperty( String key, String defaultValue )
-    {
-        return this.config.getProperty( key, defaultValue );
-    }
-
-    /**
-     * @param key
-     * @return
+     *            the key to lookup
+     * @return the configuration value for the given key, using the default if
+     *         unavailable
      * @see java.util.Properties#getProperty(java.lang.String)
      */
     public String getProperty( String key )
     {
-        return getProperty( key, DEFAULTS.getProperty( key ) );
+        return this.config.getProperty( key, DEFAULTS.getProperty( key ) );
     }
 
     /**
+     * Load the configuration from the given
+     * 
      * @param inStream
+     *            the input stream
      * @throws IOException
+     *             if an I/O error occurs
      * @see java.util.Properties#load(java.io.InputStream)
      */
     public void load( InputStream inStream ) throws IOException
@@ -222,8 +235,12 @@ public class Configuration
     }
 
     /**
+     * Load configuration from the given <code>Reader</code>
+     * 
      * @param reader
+     *            the reader
      * @throws IOException
+     *             if an I/O error occurs
      * @see java.util.Properties#load(java.io.Reader)
      */
     public void load( Reader reader ) throws IOException

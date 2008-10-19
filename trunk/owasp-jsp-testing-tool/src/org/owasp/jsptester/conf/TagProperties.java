@@ -34,70 +34,168 @@ import java.io.IOException;
 import java.util.Properties;
 
 /**
+ * Encapsulates the tag property configuration values for each tag's attributes
+ * as well as any necessary prefixes or suffixes to the construction of the JSP
+ * tag.
+ * 
  * @author Jason Li
  * 
  */
 public class TagProperties
 {
-    /*
-     * tagName.prop_name=value tagName.prefix=value tagName.suffix=value
+    /**
+     * The tag properties
      */
+    private final Properties tagProperties = new Properties();;
 
-    private static final String DEFAULT_PREFIX = "<%@ taglib uri=\"http://java.sun.com/jsf/core\" prefix=\"f\" %>\n<f:view>";
-
-    private static final String DEFAULT_SUFFIX = "</f:view>";
-
-    private final Properties tagProperties;
-
-    public TagProperties()
-    {
-        tagProperties = new Properties();
-    }
-
+    /**
+     * Returns the prefix to use for the given tag
+     * 
+     * @param tagName
+     *            the tag to look up the prefix for
+     * @return the prefix to use for the given tag
+     */
     public String getTagPrefix( String tagName )
     {
-        return this.tagProperties.getProperty( tagName + "-prefix",
-                DEFAULT_PREFIX );
+        return this.tagProperties.getProperty( tagName + "-prefix", "" );
     }
 
+    /**
+     * Sets the prefix for the given tag to the given prefix
+     * 
+     * @param tagName
+     *            the tag to set
+     * @param prefix
+     *            the prefix to set to
+     */
     public void setTagPrefix( String tagName, String prefix )
     {
         this.tagProperties.setProperty( tagName + "-prefix", prefix );
     }
 
+    /**
+     * Returns the suffix to use for the given tag
+     * 
+     * @param tagName
+     *            the tag to look up the suffix for
+     * @return the suffix to use for the given tag
+     */
     public String getTagSuffix( String tagName )
     {
-        return this.tagProperties.getProperty( tagName + "-suffix",
-                DEFAULT_SUFFIX );
+        return this.tagProperties.getProperty( tagName + "-suffix", "" );
     }
 
+    /**
+     * Sets the suffix for the given tag to the given suffix
+     * 
+     * @param tagName
+     *            the tag to set
+     * @param suffix
+     *            the suffix to set to
+     */
     public void setTagSuffix( String tagName, String suffix )
     {
         this.tagProperties.setProperty( tagName + "-suffix", suffix );
     }
 
+    /**
+     * Returns true if the given tag has a configured prefix value; false
+     * otherwise
+     * 
+     * @param tagName
+     *            the tag to check
+     * @return true if the given tag has a configured prefix value; false
+     *         otherwise
+     */
+    public boolean hasTagPrefix( String tagName )
+    {
+        return this.tagProperties.containsKey( tagName + "-prefix" );
+    }
+
+    /**
+     * Returns true if the given tag has a configured suffix value; false
+     * otherwise
+     * 
+     * @param tagName
+     *            the tag to check
+     * @return true if the given tag has a configured suffix value; false
+     *         otherwise
+     */
+    public boolean hasTagSuffix( String tagName )
+    {
+        return this.tagProperties.containsKey( tagName + "-suffix" );
+    }
+
+    /**
+     * Returns true if the given tag has a configured value for the given
+     * property; false otherwise
+     * 
+     * @param tagName
+     *            the tag to check
+     * @param propertyName
+     *            the property to check
+     * @return true if the given tag has a configured value for the given
+     *         property; false otherwise
+     */
     public boolean hasTagProperty( String tagName, String propertyName )
     {
         return this.tagProperties.containsKey( tagName + "." + propertyName );
     }
 
+    /**
+     * Returns the configuration value for the given property for the given tag
+     * 
+     * @param tagName
+     *            the tag
+     * @param propertyName
+     *            the name of the property
+     * @return the configuration value for the given property for the given tag
+     */
     public String getTagProperty( String tagName, String propertyName )
     {
-        return this.tagProperties.getProperty( tagName + "." + propertyName );
+        return this.tagProperties
+                .getProperty( tagName + "." + propertyName, "" );
     }
 
+    /**
+     * Sets the configuration value of the given property for the given tag to
+     * the given value
+     * 
+     * @param tagName
+     *            the tag
+     * @param propertyName
+     *            the name of the property
+     * @param property
+     *            the value of the property
+     */
     public void setTagProperty( String tagName, String propertyName,
             String property )
     {
         this.tagProperties.setProperty( tagName + "." + propertyName, property );
     }
 
+    /**
+     * Loads the tag properties from the given file
+     * 
+     * @param file
+     *            the file to load
+     * @throws IOException
+     *             if an I/O error occurs
+     */
     public void load( File file ) throws IOException
     {
         this.tagProperties.clear();
         this.tagProperties.loadFromXML( new FileInputStream( file ) );
     }
 
+    /**
+     * Saves the tag properties to the given file
+     * 
+     * @param file
+     *            the file to save to
+     * @throws IOException
+     *             if an I/O error occurs
+     */
     public void save( File file ) throws IOException
     {
         this.tagProperties.storeToXML( new FileOutputStream( file ),

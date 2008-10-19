@@ -55,23 +55,47 @@ import org.owasp.jsptester.conf.Configuration;
 import org.owasp.jsptester.conf.TagProperties;
 import org.owasp.jsptester.parser.TagLibraryUtils;
 
+/**
+ * Class that encapsulates generating files related to the report web app,
+ * including the individual test cases, the final summary and any other base
+ * files necessary to deploy the web application
+ * 
+ * @author Jason Li
+ * 
+ */
 public class ReportGenerator
 {
-
+    /**
+     * Logger
+     */
     private static final Logger LOGGER = Logger
             .getLogger( ReportGenerator.class.getName() );
 
+    /**
+     * Singleton instance of the report generator
+     */
     private static ReportGenerator INSTANCE;
 
+    /**
+     * Velocity template engine
+     */
     private final VelocityEngine engine = new VelocityEngine();
 
+    /**
+     * Creates an instance of the report generator
+     * 
+     * @throws VelocityException
+     *             if an error occurs initialize the Velocity engine
+     */
     private ReportGenerator() throws VelocityException
     {
+        // Set the engine to use the Java Logger
         engine.setProperty( RuntimeConstants.RUNTIME_LOG_LOGSYSTEM_CLASS,
                 JdkLogChute.class.getName() );
 
         try
         {
+            // initialize the Velocity engine
             engine.init();
         }
         catch ( Exception e )
@@ -80,6 +104,13 @@ public class ReportGenerator
         }
     }
 
+    /**
+     * Returns the singleton instance of the report generator
+     * 
+     * @return the singleton instance of the report generator
+     * @throws VelocityException
+     *             if the Velocity engine cannot be initialized
+     */
     public synchronized static final ReportGenerator getInstance()
             throws VelocityException
     {
@@ -101,23 +132,37 @@ public class ReportGenerator
      */
     private void copyBase( File outputDir ) throws IOException
     {
-        LOGGER.entering( ReportGenerator.class.getName(), "copyBase(File)" );
+        LOGGER
+                .entering( ReportGenerator.class.getName(), "copyBase",
+                        outputDir );
 
+        // copy the index.jsp
         FileUtils.copyFileToDirectory( new File( Configuration.getInstance()
                 .getProperty( Configuration.TEMPLATE_INDEX_JSP ) ), outputDir );
 
+        LOGGER.fine( "Copied index.jsp" );
+
+        // copy the error handler (error.jsp)
         FileUtils.copyFileToDirectory( new File( Configuration.getInstance()
                 .getProperty( Configuration.TEMPLATE_ERROR_JSP ) ), outputDir );
 
+        LOGGER.fine( "Copied error.jsp" );
+
+        // copy the META-INF folder
         FileUtils.copyDirectory( new File( Configuration.getInstance()
                 .getProperty( Configuration.TEMPLATE_META_INF ) ), new File(
                 outputDir, "META-INF" ) );
 
+        LOGGER.fine( "Copied META-INF folder" );
+
+        // copy the WEB-INF folder
         FileUtils.copyDirectory( new File( Configuration.getInstance()
                 .getProperty( Configuration.TEMPLATE_WEB_INF ) ), new File(
                 outputDir, "WEB-INF" ) );
 
-        LOGGER.exiting( ReportGenerator.class.getName(), "copyBase(File)" );
+        LOGGER.fine( "Copied WEB-INF folder" );
+
+        LOGGER.exiting( ReportGenerator.class.getName(), "copyBase" );
     }
 
     /**
@@ -126,10 +171,13 @@ public class ReportGenerator
      * 
      * @param tagLibrary
      *            the tag library to test
+     * @param tagProperties
+     *            the tag properties to use
      * @param attacks
      *            the set of attacks to use
      * @param outputDir
      *            the output directory to place the report in
+     * @return a <ocde>List&lt;File&gt;</code> of files generated
      * @throws IOException
      *             if any I/O error occurs
      */
@@ -138,6 +186,11 @@ public class ReportGenerator
             throws IOException
     {
 
+        LOGGER.entering( ReportGenerator.class.getName(),
+                "generateLibraryReport", new Object[]
+                    { tagLibrary, tagProperties, attacks, outputDir } );
+
+        // keep track of generated test case files
         List/* <File> */generatedTestCases = new ArrayList/* <File> */();
 
         // Copy the base files over
@@ -156,19 +209,54 @@ public class ReportGenerator
         {
             generatedTestCases.addAll( generateTagReport( tagLibrary,
                     tagProperties, tags[tagIdx], attacks, outputDir ) );
+            LOGGER.finer( "Test case for " + tags[tagIdx].getTagName()
+                    + " generated" );
         }
+
+        LOGGER.fine( "Test cases generated" );
+
+        LOGGER.exiting( ReportGenerator.class.getName(),
+                "generateLibraryReport", generatedTestCases );
 
         return generatedTestCases;
     }
 
+    /**
+     * Generates a report on the given tag from the given tag library using the
+     * given attacks and places the output in the given outputDir.
+     * 
+     * @param tagLibrary
+     *            the tag library being used
+     * @param tagProperties
+     *            the tag properties to use
+     * @param tag
+     *            the tag to be tested
+     * @param attacks
+     *            the set of attacks to use the output directory to place the
+     *            report in
+     * @param outputDir
+     *            the output directory to place the report in
+     * @return a <code>List&lt;File&gt;</code> of files generated
+     * @throws IOException
+     *             if any I/O error occurs
+     */
     public List/* <File> */generateTagReport( TagLibraryInfo tagLibrary,
             TagProperties tagProperties, TagInfo tag, Attack[] attacks,
             File outputDir ) throws IOException
     {
+
+        LOGGER.entering( ReportGenerator.class.getName(), "generateTagReport",
+                new Object[]
+                    { tagLibrary, tagProperties, tag, attacks, outputDir } );
+
+        // keep track of the generated files
         List/* <File> */generatedTestCases = new ArrayList/* <File> */();
 
+        // copy base files over
         copyBase( outputDir );
-        
+
+        LOGGER.fine( "Base files copied" );
+
         // For each tag, test each attack embedded inside the component
         for ( int attackIdx = 0; attackIdx < attacks.length; attackIdx++ )
         {
@@ -186,8 +274,12 @@ public class ReportGenerator
                                 Configuration.REPORT_FILE_EXTENSION ) );
                 compFileWriter = new FileWriter( compFile );
 
-                generateComponentTest( tagLibrary, tagProperties, tag, attack,
+                // generate the component test file
+                writeComponentTest( tagLibrary, tagProperties, tag, attack,
                         compFileWriter );
+
+                LOGGER.finer( "Test file " + compFile.getCanonicalPath()
+                        + " generated" );
 
                 generatedTestCases.add( compFile );
             }
@@ -196,10 +288,9 @@ public class ReportGenerator
                 IOUtils.closeQuietly( compFileWriter );
                 compFileWriter = null;
             }
-
-            LOGGER.fine( tag.getTagName() + "-" + attack.getName()
-                    + " file generated" );
         }
+
+        LOGGER.fine( "Component tests generated." );
 
         // For each attribute, test each attack in the attribute
         TagAttributeInfo[] attrs = tag.getAttributes();
@@ -215,47 +306,60 @@ public class ReportGenerator
                 {
                     // Create a test case file
                     // [tagName-attackName-attrName.jsp]
-                    File compFile = new File( outputDir, tag.getTagName()
+                    File attrFile = new File( outputDir, tag.getTagName()
                             + "-"
                             + attr.getName()
                             + "-"
                             + attack.getName()
                             + Configuration.getInstance().getProperty(
                                     Configuration.REPORT_FILE_EXTENSION ) );
-                    compFileWriter = new FileWriter( compFile );
+                    compFileWriter = new FileWriter( attrFile );
 
-                    generateAtrributeTest( tagLibrary, tagProperties, tag,
+                    writeAtrributeTest( tagLibrary, tagProperties, tag,
                             attrs[attrIdx], attacks[attackIdx], compFileWriter );
 
-                    generatedTestCases.add( compFile );
+                    LOGGER.finer( "Test file " + attrFile.getCanonicalPath()
+                            + " file generated" );
+
+                    generatedTestCases.add( attrFile );
                 }
                 finally
                 {
                     IOUtils.closeQuietly( compFileWriter );
                 }
-                LOGGER.fine( tag.getTagName() + "-" + attr.getName() + "-"
-                        + attack.getName() + " file generated" );
             }
         }
-        
-        generateTagReportFile(tagLibrary, tag, outputDir);
+
+        LOGGER.fine( "Attribute tests generated." );
+
+        // Generate the tag report file
+        generateTagReportFile( tagLibrary, tag, outputDir );
+
+        LOGGER.fine( "Tag report generated" );
+
+        LOGGER.exiting( ReportGenerator.class.getName(),
+                "generateTagReport", generatedTestCases );
 
         return generatedTestCases;
     }
 
     /**
-     * Writes the main report file from a Velocity report template
+     * Crates the main tag library report file from a Velocity report template
      * 
      * @param tagLibrary
      *            the tab library being tested
-     * @param output
-     *            the Writer to use for output
+     * @param outputDir
+     *            the output directory to place the report in
      * @throws VelocityException
      *             if an error using the Velocity engine occurs
      */
-    private void generateLibraryReportFile( TagLibraryInfo tagLibrary, File outputDir )
-            throws VelocityException
+    private void generateLibraryReportFile( TagLibraryInfo tagLibrary,
+            File outputDir ) throws VelocityException
     {
+
+        LOGGER.entering( ReportGenerator.class.getName(),
+                "generateLibraryReportFile", new Object[]
+                    { tagLibrary, outputDir } );
 
         File reportFile = new File( outputDir, Configuration.getInstance()
                 .getProperty( Configuration.REPORT_FILE_NAME ) );
@@ -279,6 +383,8 @@ public class ReportGenerator
                 throw new VelocityException( e );
             }
 
+            LOGGER.fine( "Retrieved Velocity template" );
+
             VelocityContext context = new VelocityContext();
 
             // Set template properties
@@ -293,11 +399,15 @@ public class ReportGenerator
             context.put( "extension", Configuration.getInstance().getProperty(
                     Configuration.REPORT_FILE_EXTENSION ) );
 
+            LOGGER.fine( "Placed attributes in Velocity conetxt" );
+
             if ( reportTemplate != null )
             {
                 // fill the template attributes
                 reportTemplate.merge( context, writer );
             }
+
+            LOGGER.fine( "Executed template merge" );
         }
         catch ( IOException ioe )
         {
@@ -309,21 +419,30 @@ public class ReportGenerator
             writer = null;
         }
 
+        LOGGER.exiting( ReportGenerator.class.getName(),
+                "generateLibraryReportFile" );
     }
 
     /**
-     * Writes the main report file from a Velocity report template
+     * Creates the report file for an individual tag from a Velocity report
+     * template
      * 
      * @param tagLibrary
-     *            the tab library being tested
-     * @param output
-     *            the Writer to use for output
+     *            the tab library to use
+     * @param tag
+     *            the tag being tested
+     * @param outputDir
+     *            the output directory to place the report in
      * @throws VelocityException
      *             if an error using the Velocity engine occurs
      */
     private void generateTagReportFile( TagLibraryInfo tagLibrary, TagInfo tag,
             File outputDir ) throws VelocityException
     {
+
+        LOGGER.entering( ReportGenerator.class.getName(),
+                "generateTagReportFile", new Object[]
+                    { tagLibrary, tag, outputDir } );
 
         File reportFile = new File( outputDir, tag.getTagName() + ".html" );
         FileWriter writer = null;
@@ -346,6 +465,8 @@ public class ReportGenerator
                 throw new VelocityException( e );
             }
 
+            LOGGER.fine( "Retrieved Velocity template" );
+
             VelocityContext context = new VelocityContext();
 
             // Set template properties
@@ -361,11 +482,15 @@ public class ReportGenerator
             context.put( "extension", Configuration.getInstance().getProperty(
                     Configuration.REPORT_FILE_EXTENSION ) );
 
+            LOGGER.fine( "Placed attributes in Velocity conetxt" );
+
             if ( reportTemplate != null )
             {
                 // fill the template attributes
                 reportTemplate.merge( context, writer );
             }
+
+            LOGGER.fine( "Executed template merge" );
         }
         catch ( IOException ioe )
         {
@@ -377,6 +502,8 @@ public class ReportGenerator
             writer = null;
         }
 
+        LOGGER.exiting( ReportGenerator.class.getName(),
+                "generateTagReportFile" );
     }
 
     /**
@@ -396,36 +523,17 @@ public class ReportGenerator
      * @throws VelocityException
      *             if an error using the Velocity engine occurs
      */
-    private void generateAtrributeTest( TagLibraryInfo tagLibrary,
+    private void writeAtrributeTest( TagLibraryInfo tagLibrary,
             TagProperties tagProperties, TagInfo tag, TagAttributeInfo attr,
             Attack attack, Writer output ) throws VelocityException
     {
-        if ( TagLibraryUtils.hasRequiredAttributes( tag ) )
-        {
-            Set/* <TagAttributeInfo> */reqAttrs = TagLibraryUtils
-                    .getRequiredAttributes( tag );
-            boolean reqAttrsConfigured = true;
-            for ( Iterator itr = reqAttrs.iterator(); itr.hasNext()
-                    && reqAttrsConfigured; )
-            {
-                TagAttributeInfo reqAttr = (TagAttributeInfo) itr.next();
-                if ( reqAttr.equals( attr ) )
-                {
-                    continue;
-                }
-                reqAttrsConfigured &= tagProperties.hasTagProperty( tag
-                        .getTagName(), reqAttr.getName() );
-            }
 
-            if ( !reqAttrsConfigured )
-            {
-                LOGGER.warning( tag.getTagName()
-                        + " has unconfigured required attributes: "
-                        + TagLibraryUtils.getRequiredAttributes( tag ) );
+        LOGGER.entering( ReportGenerator.class.getName(), "writeAttributeTest",
+                new Object[]
+                    { tagLibrary, tagProperties, tag, attr, attack, output } );
 
-                return;
-            }
-        }
+        // verify that required attributes are configured
+        verifyRequiredAttributes( tag, attr, tagProperties );
 
         Template reportTemplate = null;
 
@@ -440,12 +548,17 @@ public class ReportGenerator
             throw new VelocityException( e );
         }
 
+        LOGGER.fine( "Retrieved Velocity template" );
+
         VelocityContext context = new VelocityContext();
 
         // Create the JSP Tag test case
-        String testCase = TestCase.generateTestCaseJspTag( tagLibrary, tag,
+        String testCase = TestCase.generateAttrTestCaseJspTag( tagLibrary, tag,
                 attr, attack, TagLibraryUtils.getRequiredAttributesMap( tag,
                         tagProperties ) );
+
+        LOGGER.fine( "Created tag" );
+        LOGGER.finest( "\tTag: " + testCase );
 
         // add the template attributes
         context.put( "tagLib", tagLibrary );
@@ -459,18 +572,24 @@ public class ReportGenerator
         context.put( "test_suffix", tagProperties.getTagSuffix( tag
                 .getTagName() ) );
 
+        LOGGER.fine( "Placed attributes in Velocity conetxt" );
+
         if ( reportTemplate != null )
         {
             try
             {
                 // fill the attributes in the template
                 reportTemplate.merge( context, output );
+                LOGGER.fine( "Executed template merge" );
             }
             catch ( IOException ioe )
             {
                 throw new VelocityException( ioe );
             }
         }
+
+        LOGGER.exiting( ReportGenerator.class.getName(),
+                "writeAttributeTest" );
     }
 
     /**
@@ -479,6 +598,8 @@ public class ReportGenerator
      * 
      * @param tagLibrary
      *            the tag library being tested
+     * @param tagProperties
+     *            the tag properties to use
      * @param tag
      *            the tag being tested
      * @param attack
@@ -488,33 +609,16 @@ public class ReportGenerator
      * @throws VelocityException
      *             if an error occurs using the Velocity engine
      */
-    private void generateComponentTest( TagLibraryInfo tagLibrary,
+    private void writeComponentTest( TagLibraryInfo tagLibrary,
             TagProperties tagProperties, TagInfo tag, Attack attack,
             Writer output ) throws VelocityException
     {
+        LOGGER.entering( ReportGenerator.class.getName(), "writeComponentTest",
+                new Object[]
+                    { tagLibrary, tagProperties, tag, attack, output } );
 
-        if ( TagLibraryUtils.hasRequiredAttributes( tag ) )
-        {
-            Set/* <TagAttributeInfo> */reqAttrs = TagLibraryUtils
-                    .getRequiredAttributes( tag );
-            boolean reqAttrsConfigured = true;
-            for ( Iterator itr = reqAttrs.iterator(); itr.hasNext()
-                    && reqAttrsConfigured; )
-            {
-                TagAttributeInfo reqAttr = (TagAttributeInfo) itr.next();
-                reqAttrsConfigured &= tagProperties.hasTagProperty( tag
-                        .getTagName(), reqAttr.getName() );
-            }
-
-            if ( !reqAttrsConfigured )
-            {
-                LOGGER.warning( tag.getTagName()
-                        + " has unconfigured required attributes: "
-                        + TagLibraryUtils.getRequiredAttributes( tag ) );
-
-                return;
-            }
-        }
+        // verify that all required attributes are configured
+        verifyRequiredAttributes( tag, null, tagProperties );
 
         Template reportTemplate = null;
 
@@ -529,12 +633,17 @@ public class ReportGenerator
             throw new VelocityException( e );
         }
 
+        LOGGER.fine( "Retrieved Velocity template" );
+
         VelocityContext context = new VelocityContext();
 
         // generate the JSP tag test case
-        String testCase = TestCase.generateTagTextTestCaseJspTag( tagLibrary,
-                tag, attack, TagLibraryUtils.getRequiredAttributesMap( tag,
+        String testCase = TestCase.generateTagTestCaseJspTag( tagLibrary, tag,
+                attack, TagLibraryUtils.getRequiredAttributesMap( tag,
                         tagProperties ) );
+
+        LOGGER.fine( "Created tag" );
+        LOGGER.finest( "\tTag: " + testCase );
 
         // add the template attributes
         context.put( "tagLib", tagLibrary );
@@ -547,17 +656,84 @@ public class ReportGenerator
         context.put( "test_suffix", tagProperties.getTagSuffix( tag
                 .getTagName() ) );
 
+        LOGGER.fine( "Placed attributes in Velocity conetxt" );
+
         if ( reportTemplate != null )
         {
             try
             {
                 // fill the attributes in the template
                 reportTemplate.merge( context, output );
+                LOGGER.fine( "Executed template merge" );
             }
             catch ( IOException ioe )
             {
                 throw new VelocityException( ioe );
             }
         }
+
+        LOGGER.exiting( ReportGenerator.class.getName(),
+                "writeComponentTest" );
+    }
+
+    /**
+     * Checks to see that all the required attributes for the given tag are
+     * configured in the tag properties file
+     * 
+     * @param tag
+     *            the tag to test
+     * @param attr
+     *            the attribute being tested
+     * @param tagProperties
+     *            the tag properties to use
+     */
+    private void verifyRequiredAttributes( TagInfo tag, TagAttributeInfo attr,
+            TagProperties tagProperties )
+    {
+        LOGGER.entering( ReportGenerator.class.getName(),
+                "verifyRequiredAttributes", new Object[]
+                    { tag, attr, tagProperties } );
+
+        // if the tag has required attributes, check to see that these
+        // attributes are configured in the tag properties file
+        if ( TagLibraryUtils.hasRequiredAttributes( tag ) )
+        {
+            // get the set of required attributes
+            Set/* <TagAttributeInfo> */reqAttrs = TagLibraryUtils
+                    .getRequiredAttributes( tag );
+
+            boolean reqAttrsConfigured = true;
+
+            // loop over required attributes
+            for ( Iterator itr = reqAttrs.iterator(); itr.hasNext()
+                    && reqAttrsConfigured; )
+            {
+                TagAttributeInfo reqAttr = (TagAttributeInfo) itr.next();
+
+                // if the required attribute is the one being tested, don't need
+                // to pull from tag properties
+                if ( reqAttr.equals( attr ) )
+                {
+                    continue;
+                }
+
+                // if the tag properties file doesn't not contain the required
+                // attribute, tag is not configured properly
+                reqAttrsConfigured &= tagProperties.hasTagProperty( tag
+                        .getTagName(), reqAttr.getName() );
+            }
+
+            // if not all required attributes are configured, log a warning
+            // message
+            if ( !reqAttrsConfigured )
+            {
+                LOGGER.warning( tag.getTagName()
+                        + " has unconfigured required attributes: "
+                        + TagLibraryUtils.getRequiredAttributes( tag ) );
+            }
+        }
+
+        LOGGER.exiting( ReportGenerator.class.getName(),
+                "verifyRequiredAttributes" );
     }
 }

@@ -35,40 +35,55 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpContentTooLargeException;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.io.IOUtils;
 
 /**
+ * Encapsulates the process of serializing a test case.
+ * 
  * @author Jason Li
  * 
  */
 public class TestCaseSerializer
 {
-    private static final Logger LOGGER = Logger.getLogger( TestCaseSerializer.class.getName() );
-    
-    private final URL page;
 
-    public TestCaseSerializer( URL page )
-    {
-        this.page = page;
-    }
+    /**
+     * Logger
+     */
+    private static final Logger LOGGER = Logger
+            .getLogger( TestCaseSerializer.class.getName() );
 
-    public void serialize(File outputFile) throws URISyntaxException
+    /**
+     * Serialize the test case by downloading the given URL and copying the
+     * contents to the given output file.
+     * 
+     * @param page
+     *            the page to download
+     * @param outputFile
+     *            the output file
+     * 
+     * @throws IOException
+     *             if an I/O error occurs
+     * @throws URISyntaxException
+     *             if the page URL is formatted incorrectly
+     */
+    public static void serialize( URL page, File outputFile )
+            throws IOException, URISyntaxException
     {
-        LOGGER.entering( this.getClass().getName(), "serialize(File)" );
-        
+        LOGGER.entering( TestCaseSerializer.class.getName(), "serialize",
+                new Object[]
+                    { page, outputFile } );
+
+        if ( !page.getProtocol().startsWith( "http" ) )
+        {
+            throw new IllegalArgumentException(
+                    "Only HTTP/S progocol is supported" );
+        }
+
         HttpClient httpClient = new HttpClient();
-
-        // HttpConnectionManagerParams params = httpClient
-        // .getHttpConnectionManager().getParams();
-        // params.setConnectionTimeout(timeout);
-        // params.setSoTimeout(timeout);
-        // httpClient.getHttpConnectionManager().setParams(params);
 
         URI pageUri = page.toURI();
 
@@ -81,14 +96,10 @@ public class TestCaseSerializer
             // get test case from embedded server
             httpClient.executeMethod( pageRequest );
             responseBody = pageRequest.getResponseBodyAsStream();
-            
-            output = new FileOutputStream(outputFile);
-            
+
+            output = new FileOutputStream( outputFile );
+
             IOUtils.copy( responseBody, output );
-        }
-        catch ( IOException ioe )
-        {
-            LOGGER.log( Level.WARNING, "Error serializing test case", ioe );            
         }
         finally
         {
@@ -97,13 +108,19 @@ public class TestCaseSerializer
             IOUtils.closeQuietly( output );
         }
 
-        LOGGER.exiting( this.getClass().getName(), "serialize" );
+        LOGGER.exiting( TestCaseSerializer.class.getName(), "serialize" );
     }
-    
-    public static void main(String[] args) throws Exception
+
+    /**
+     * Test code
+     * 
+     * @deprecated
+     */
+    public static void main( String[] args ) throws Exception
     {
-        TestCaseSerializer tcs = new TestCaseSerializer(new URL("http://localhost:8096/test/outputLabel-raw.jsp"));
-        tcs.serialize(new File("./output/outputLabel-raw.html"));
-        
+        TestCaseSerializer.serialize( new URL(
+                "http://localhost:8096/test/outputLabel-raw.jsp" ), new File(
+                "./output/outputLabel-raw.html" ) );
+
     }
 }

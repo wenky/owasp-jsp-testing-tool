@@ -29,10 +29,9 @@ package org.owasp.jsptester.report;
 
 import java.io.File;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
+import java.util.logging.Logger;
 
 import javax.servlet.jsp.tagext.TagAttributeInfo;
 import javax.servlet.jsp.tagext.TagInfo;
@@ -51,6 +50,9 @@ import org.owasp.jsptester.parser.TagFileParser;
 public class TestCase
 {
 
+    private static final Logger LOGGER = Logger.getLogger( TestCase.class
+            .getName() );
+
     /**
      * Create a proper JSP tag with the given attribute set to the given attack
      * 
@@ -64,15 +66,22 @@ public class TestCase
      *            the attack being used
      * @return a String representing the valid JSP tag syntax for this test case
      */
-    public static String generateTestCaseJspTag( TagLibraryInfo tagLibrary,
+    public static String generateAttrTestCaseJspTag( TagLibraryInfo tagLibrary,
             TagInfo tag, TagAttributeInfo attr, Attack attack,
             Map/* <TagAttributeInfo, String> */reqAttrs )
     {
+        LOGGER.entering( TestCase.class.getName(),
+                "generateAttrTestCaseJspTag", new Object[]
+                    { tagLibrary, tag, attr, attack, reqAttrs } );
+
+        // create the tag
         XML customTag = new XML( tagLibrary.getShortName() + ":"
                 + tag.getTagName() );
 
+        // add the attack attribute to the tag
         customTag.addAttribute( attr.getName(), attack.getAttackString() );
 
+        // for any required attributes, add the attributes to the tag
         for ( Iterator/* <TagAttributeInfo> */itr = reqAttrs.keySet()
                 .iterator(); itr.hasNext(); )
         {
@@ -80,7 +89,13 @@ public class TestCase
             customTag.addAttribute( reqAttr.getName(), reqAttrs.get( reqAttr )
                     .toString() );
         }
-        return customTag.toString();
+
+        String toReturn = customTag.toString();
+
+        LOGGER.exiting( TestCase.class.getName(), "generateAttrTestCaseJspTag",
+                toReturn );
+
+        return toReturn;
     }
 
     /**
@@ -94,14 +109,19 @@ public class TestCase
      *            the attack being used
      * @return a String representing the valid JSP tag syntax for this test case
      */
-    public static String generateTagTextTestCaseJspTag(
-            TagLibraryInfo tagLibrary, TagInfo tag, Attack attack,
+    public static String generateTagTestCaseJspTag( TagLibraryInfo tagLibrary,
+            TagInfo tag, Attack attack,
             Map/* <TagAttributeInfo, String> */reqAttrs )
     {
+        LOGGER.entering( TestCase.class.getName(), "generateTagTestCaseJspTag",
+                new Object[]
+                    { tagLibrary, tag, attack } );
+
+        // create the tag
         XML customTag = new XML( tagLibrary.getShortName() + ":"
                 + tag.getTagName() );
 
-        Set/* <TagAttributeInfo> */requiredAttrs = new HashSet/* <TagAttributeInfo> */();
+        // for any required attributes, add the attributes to the tag
         for ( Iterator/* <TagAttributeInfo> */itr = reqAttrs.keySet()
                 .iterator(); itr.hasNext(); )
         {
@@ -110,11 +130,19 @@ public class TestCase
                     .toString() );
         }
 
+        // set the embedded text of the tag to the attack
         customTag.setTagText( attack.getAttackString() );
-        return customTag.toString();
+
+        String toReturn = customTag.toString();
+        LOGGER.exiting( TestCase.class.getName(), "generateTagTestCaseJspTag",
+                toReturn );
+
+        return toReturn;
     }
 
     /**
+     * Test code
+     * 
      * @deprecated
      */
     public static void main( String[] args ) throws Exception
@@ -140,9 +168,9 @@ public class TestCase
                 {
                     Attack attack = attacks[attackIdx];
 
-                    System.out.println( generateTagTextTestCaseJspTag(
-                            tagLibrary, tag, attack , Collections.EMPTY_MAP ) );
-                    System.out.println( generateTestCaseJspTag( tagLibrary,
+                    System.out.println( generateTagTestCaseJspTag( tagLibrary,
+                            tag, attack, Collections.EMPTY_MAP ) );
+                    System.out.println( generateAttrTestCaseJspTag( tagLibrary,
                             tag, attr, attack, Collections.EMPTY_MAP ) );
                 }
             }
