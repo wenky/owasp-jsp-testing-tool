@@ -49,6 +49,7 @@ import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.exception.VelocityException;
 import org.apache.velocity.runtime.RuntimeConstants;
 import org.apache.velocity.runtime.log.JdkLogChute;
+import org.owasp.esapi.codecs.JavaScriptCodec;
 import org.owasp.jsptester.attack.Attack;
 import org.owasp.jsptester.attack.AttackLibrary;
 import org.owasp.jsptester.conf.Configuration;
@@ -71,6 +72,11 @@ public class ReportGenerator
     private static final Logger LOGGER = Logger
             .getLogger( ReportGenerator.class.getName() );
 
+    /**
+     * Encoder to encode attack for test case
+     */
+    private static final JavaScriptCodec CODEC = new JavaScriptCodec();
+    
     /**
      * Singleton instance of the report generator
      */
@@ -565,6 +571,7 @@ public class ReportGenerator
         context.put( "tag", tag );
         context.put( "attribute", attr );
         context.put( "attack", attack );
+        context.put( "encoded_attack", CODEC.encode( attack.getAttackString() ));
         context.put( "tag_test", testCase );
 
         context.put( "test_prefix", tagProperties.getTagPrefix( tag
@@ -649,6 +656,7 @@ public class ReportGenerator
         context.put( "tagLib", tagLibrary );
         context.put( "tag", tag );
         context.put( "attack", attack );
+        context.put( "encoded_attack", "" );
         context.put( "tag_test", testCase );
 
         context.put( "test_prefix", tagProperties.getTagPrefix( tag
