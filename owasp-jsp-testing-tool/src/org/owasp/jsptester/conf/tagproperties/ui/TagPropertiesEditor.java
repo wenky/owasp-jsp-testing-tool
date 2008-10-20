@@ -886,13 +886,13 @@ public class TagPropertiesEditor extends JFrame
 
         // if first argument is present, load the given tag properties
         // configuration file
-        if ( args[0] != null )
+        if ( args.length > 0 )
         {
             tpe.openTpxFile( new File( args[0] ) );
         }
 
         // if the second argument is present, load the given tag library file
-        if ( args[1] != null )
+        if ( args.length > 1 )
         {
             tpe.loadTldFile( new File( args[1] ) );
         }
