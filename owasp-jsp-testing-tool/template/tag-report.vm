@@ -150,7 +150,6 @@ function runTest(name)
 
 <!-- Begin Tag Report Results -->
 
-#foreach(${tag} in ${tagLib.tags})
 <h3>${tag.tagName}</h3>
 <table border="1">
 	<tr>
@@ -174,7 +173,6 @@ function runTest(name)
 	</tr>
 #end
 </table>
-#end
 
 <!-- End Tag Report Results -->
 

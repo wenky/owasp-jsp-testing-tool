@@ -59,6 +59,7 @@ function arrayContains( array, value )
 
 function checkEventHandlers()
 {	
+	var attack = "${encoded_attack}";
 	var testCase = document.getElementById('test-case');
 	var tags = testCase.getElementsByTagName("*");
 	for ( var tagIdx = 0; tagIdx < tags.length; tagIdx++ )
@@ -67,7 +68,8 @@ function checkEventHandlers()
 
       for ( var attrIdx=0; attrIdx<attrs.length; attrIdx++ )
       {
-      	if ( arrayContains( eventHandlers, attrs[attrIdx].nodeName ) )
+      	if ( arrayContains( eventHandlers, attrs[attrIdx].nodeName ) 
+      			&& attrs[attrIdx].value == attack )
       	{
 				eval( attrs[attrIdx].value );
 			}
