@@ -28,6 +28,7 @@
 package org.owasp.jsptester.report;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
@@ -72,11 +73,29 @@ public class ReportGenerator
     private static final Logger LOGGER = Logger
             .getLogger( ReportGenerator.class.getName() );
 
+    private static final FileFilter SVN_FILTER = new FileFilter()
+    {
+        private static final String SVN = ".svn";
+
+        private boolean containedInSVN( File file )
+        {
+            File parent = file.getParentFile();
+            return file.getName().equals( SVN )
+                    || ( parent != null && containedInSVN( parent ) );
+        }
+
+        public boolean accept( File pathname )
+        {
+            return !containedInSVN( pathname );
+        }
+
+    };
+
     /**
      * Encoder to encode attack for test case
      */
     private static final JavaScriptCodec CODEC = new JavaScriptCodec();
-    
+
     /**
      * Singleton instance of the report generator
      */
@@ -157,14 +176,14 @@ public class ReportGenerator
         // copy the META-INF folder
         FileUtils.copyDirectory( new File( Configuration.getInstance()
                 .getProperty( Configuration.TEMPLATE_META_INF ) ), new File(
-                outputDir, "META-INF" ) );
+                outputDir, "META-INF" ), SVN_FILTER );
 
         LOGGER.fine( "Copied META-INF folder" );
 
         // copy the WEB-INF folder
         FileUtils.copyDirectory( new File( Configuration.getInstance()
                 .getProperty( Configuration.TEMPLATE_WEB_INF ) ), new File(
-                outputDir, "WEB-INF" ) );
+                outputDir, "WEB-INF" ), SVN_FILTER );
 
         LOGGER.fine( "Copied WEB-INF folder" );
 
@@ -343,8 +362,8 @@ public class ReportGenerator
 
         LOGGER.fine( "Tag report generated" );
 
-        LOGGER.exiting( ReportGenerator.class.getName(),
-                "generateTagReport", generatedTestCases );
+        LOGGER.exiting( ReportGenerator.class.getName(), "generateTagReport",
+                generatedTestCases );
 
         return generatedTestCases;
     }
@@ -571,7 +590,8 @@ public class ReportGenerator
         context.put( "tag", tag );
         context.put( "attribute", attr );
         context.put( "attack", attack );
-        context.put( "encoded_attack", CODEC.encode( attack.getAttackString() ));
+        context
+                .put( "encoded_attack", CODEC.encode( attack.getAttackString() ) );
         context.put( "tag_test", testCase );
 
         context.put( "test_prefix", tagProperties.getTagPrefix( tag
@@ -595,8 +615,7 @@ public class ReportGenerator
             }
         }
 
-        LOGGER.exiting( ReportGenerator.class.getName(),
-                "writeAttributeTest" );
+        LOGGER.exiting( ReportGenerator.class.getName(), "writeAttributeTest" );
     }
 
     /**
@@ -680,8 +699,7 @@ public class ReportGenerator
             }
         }
 
-        LOGGER.exiting( ReportGenerator.class.getName(),
-                "writeComponentTest" );
+        LOGGER.exiting( ReportGenerator.class.getName(), "writeComponentTest" );
     }
 
     /**

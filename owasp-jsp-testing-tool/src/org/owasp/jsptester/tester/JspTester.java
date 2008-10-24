@@ -33,7 +33,9 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Iterator;
 import java.util.List;
+import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
+import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -190,7 +192,7 @@ public class JspTester
         {
             if ( !outputDir.mkdirs() )
             {
-                throw new IOException( "Unable to create directories" );
+                throw new IOException( "Unable to output directory" );
             }
 
             LOGGER.fine( "Output directory [" + outputDir.getCanonicalPath()
@@ -203,92 +205,146 @@ public class JspTester
     }
 
     /**
-     * Serializes the test cases by downloading the processed test case from the
-     * embedded Tomcat instance
+     * Performs sanity checks on the build directory and creates the directory
+     * if necessary
+     * 
+     * @return a <code>File</code> object representing the build directory
+     * @throws IOException
+     *             if an I/O error occurs
+     */
+    private File initBuildDir() throws IOException
+    {
+        File buildDir = new File( Configuration.getInstance().getProperty(
+                Configuration.EMBEDDED_WEB_ROOT ) );
+
+        LOGGER.fine( "Using build directory: " + buildDir.getCanonicalPath() );
+
+        if ( buildDir.exists() && !buildDir.isDirectory() )
+        {
+            throw new IllegalArgumentException(
+                    "Build directory exists as a file" );
+        }
+        else if ( !buildDir.exists() && !buildDir.mkdirs() )
+        {
+            throw new IOException( "Unable to create build directory" );
+        }
+
+        LOGGER.exiting( JspTester.class.getName(), "initBuildDir", buildDir );
+
+        return buildDir;
+    }
+
+    /**
+     * Removes the build directory
+     * 
+     * @throws IOException
+     *             if an I/O error occurs
+     */
+    private void cleanup() throws IOException
+    {
+        LOGGER.entering( JspTester.class.getName(), "cleanup" );
+        FileUtils.deleteDirectory( new File( Configuration.getInstance()
+                .getProperty( Configuration.EMBEDDED_DOC_BASE ) ) );
+
+        LOGGER.exiting( JspTester.class.getName(), "cleanup" );
+    }
+
+    /**
+     * Serializes the test cases by downloading the processed test cases from
+     * the embedded Tomcat instance to the given directory
      * 
      * @param files
      *            the <code>List&lt;File&gt;</code> of files to serialize
+     * @param outputDir
+     *            the directory to download files to
      * @throws IOException
      *             if an I/O error occurs
      * @throws LifecycleException
      *             if an error occurs starting, stopping or restarting the
      *             embedded Tomcat instance
      */
-    private void serializeTests( List/* <File> */files ) throws IOException,
-            LifecycleException
+    private void serializeTests( List/* <File> */files, File outputDir )
+            throws IOException, LifecycleException
     {
-        LOGGER.entering( JspTester.class.getName(), "serializeTests", files );
+        LOGGER.entering( JspTester.class.getName(), "serializeTests",
+                new Object[]
+                    { files, outputDir } );
 
-        // Start the embedded Tomcat instance
-        LOGGER.fine( "Starting server..." );
         EmbeddedServer server = new EmbeddedServer();
-        server.start();
-
-        LOGGER.fine( "Server started" );
-
-        // create the context root directory for the test cases
-        File reportOut = new File( Configuration.getInstance().getProperty(
-                Configuration.REPORT_OUTPUT_DIR )
-                + File.separatorChar
-                + Configuration.getInstance().getProperty(
-                        Configuration.REPORT_CONTEXT_ROOT ) );
-        reportOut.mkdirs();
-
-        LOGGER.fine( "Created report output directory." );
-
-        int counter = 0;
-
-        // loop over each of the files to be serialized
-        for ( Iterator/* <File> */i = files.iterator(); i.hasNext(); counter++ )
+        try
         {
-            try
+            // Start the embedded Tomcat instance
+            LOGGER.fine( "Starting server..." );
+            server.start();
+
+            LOGGER.fine( "Server started" );
+
+            // create the context root directory for the test cases
+            File reportOut = new File( outputDir, Configuration.getInstance()
+                    .getProperty( Configuration.REPORT_CONTEXT_ROOT ) );
+            reportOut.mkdirs();
+
+            LOGGER.fine( "Created report output directory." );
+
+            int counter = 0;
+
+            // loop over each of the files to be serialized
+            for ( Iterator/* <File> */i = files.iterator(); i.hasNext(); counter++ )
             {
-                File f = (File) i.next();
+                try
+                {
+                    File f = (File) i.next();
 
-                // construct the URL for the test case
-                URL test = new URL( "http://localhost:"
-                        + Configuration.getInstance().getProperty(
-                                Configuration.EMBEDDED_PORT_NUM )
-                        + "/"
-                        + Configuration.getInstance().getProperty(
-                                Configuration.REPORT_CONTEXT_ROOT )
-                        + f.getName() );
-                LOGGER.finer( "Using URL: " + test );
+                    // construct the URL for the test case
+                    URL test = new URL( "http://localhost:"
+                            + Configuration.getInstance().getProperty(
+                                    Configuration.EMBEDDED_PORT_NUM )
+                            + "/"
+                            + Configuration.getInstance().getProperty(
+                                    Configuration.REPORT_CONTEXT_ROOT )
+                            + f.getName() );
+                    LOGGER.finer( "Using URL: " + test );
 
-                // serialize the URL
-                TestCaseSerializer.serialize( test, new File( reportOut, f
-                        .getName() ) );
+                    // serialize the URL
+                    TestCaseSerializer.serialize( test, new File( reportOut, f
+                            .getName() ) );
+                }
+                catch ( URISyntaxException urise )
+                {
+                    LOGGER.throwing( this.getClass().getName(),
+                            "testLibrary(String)", urise );
+                }
+
+                /*
+                 * To ensure out of memory exceptions do not occur, whenever the
+                 * memory is getting low, restart the embedded Tomcat server
+                 */
+                LOGGER.finer( "Free Memory: "
+                        + Runtime.getRuntime().freeMemory() );
+                if ( Runtime.getRuntime().freeMemory() < 1000000 )
+                {
+                    LOGGER.info( "Memory level at: "
+                            + Runtime.getRuntime().freeMemory() + ". Made "
+                            + counter + " iterations. Server restarting..." );
+                    counter = 0;
+
+                    // stop the server
+                    server.stop();
+                    server = null;
+
+                    // hint the JVM to garbage collect
+                    System.gc();
+
+                    // start a new server
+                    server = new EmbeddedServer();
+                    server.start();
+                    LOGGER.info( "Restarted" );
+                }
             }
-            catch ( URISyntaxException urise )
-            {
-                LOGGER.throwing( this.getClass().getName(),
-                        "testLibrary(String)", urise );
-            }
-
-            /*
-             * To ensure out of memory exceptions do not occur, whenever the
-             * memory is getting low, restart the embedded Tomcat server
-             */
-            LOGGER.finer( "Free Memory: " + Runtime.getRuntime().freeMemory() );
-            if ( Runtime.getRuntime().freeMemory() < 1000000 )
-            {
-                LOGGER.info( "Memory level at: "
-                        + Runtime.getRuntime().freeMemory() + ". Made "
-                        + counter + " iterations. Server restarting..." );
-                counter = 0;
-
-                // stop the server
-                server.stop();
-                server = null;
-
-                // hint the JVM to garbage collect
-                System.gc();
-
-                // start a new server
-                server = new EmbeddedServer();
-                server.start();
-                LOGGER.info( "Restarted" );
-            }
+        }
+        finally
+        {
+            server.stop();
         }
 
         LOGGER.exiting( JspTester.class.getName(), "serializeTests" );
@@ -314,32 +370,53 @@ public class JspTester
         // initialize the output directory
         File outputDir = this.initOutputDir( outputDirLocation );
 
-        LOGGER.fine( "Initialized output directory." );
-        LOGGER.finer( "\tOutput directory: " + outputDir.getCanonicalPath() );
+        LOGGER.info( "Initialized output directory." );
+        LOGGER.fine( "\tOutput directory: " + outputDir.getCanonicalPath() );
+
+        // Initialize the build directory
+        File buildDir = this.initBuildDir();
+
+        LOGGER.info( "Initialized build directory." );
+        LOGGER.fine( "\tBuild directory: " + buildDir.getCanonicalPath() );
 
         // generate the test case files
         List/* <File> */files = reportGenerator.generateLibraryReport(
-                tagLibrary, tagProperties, attacks, outputDir );
+                tagLibrary, tagProperties, attacks, buildDir );
 
-        LOGGER.fine( "Generated test case files." );
-        LOGGER.finer( "\tTest case files: " + files );
+        LOGGER.info( "Generated test case files." );
+        LOGGER.fine( "\tTest case files: " + files );
 
         // load the test cases into the embedded Tomcat instance and serialize
         // them
-        serializeTests( files );
+        serializeTests( files, outputDir );
 
-        LOGGER.fine( "Serialized test cases" );
+        LOGGER.info( "Serialized test cases" );
 
         // copy the report file to the output location
         FileUtils.copyFileToDirectory( new File( Configuration.getInstance()
-                .getProperty( Configuration.EMBEDDED_DOC_BASE )
+                .getProperty( Configuration.EMBEDDED_WEB_ROOT )
                 + File.separatorChar
                 + Configuration.getInstance().getProperty(
-                        Configuration.REPORT_FILE_NAME ) ), new File(
-                Configuration.getInstance().getProperty(
-                        Configuration.REPORT_OUTPUT_DIR ) ) );
+                        Configuration.REPORT_FILE_NAME ) ), outputDir );
 
-        LOGGER.fine( "Copied report file." );
+        TagInfo[] tags = tagLibrary.getTags();
+        
+        // copy the individual tag report files to the output location
+        for ( int tagIdx = 0; tagIdx < tags.length; tagIdx++ )
+        {
+            FileUtils.copyFileToDirectory(
+                    new File( Configuration.getInstance().getProperty(
+                            Configuration.EMBEDDED_WEB_ROOT )
+                            + File.separatorChar
+                            + tags[tagIdx].getTagName()
+                            + ".html" ), outputDir );
+        }
+
+        LOGGER.info( "Copied report files." );
+
+        cleanup();
+
+        LOGGER.info( "Performed cleanup." );
 
         LOGGER.exiting( JspTester.class.getName(), "testLibrary" );
     }
@@ -369,6 +446,12 @@ public class JspTester
         LOGGER.fine( "Initialized output directory." );
         LOGGER.finer( "\tOutput directory: " + outputDir.getCanonicalPath() );
 
+        // Initialize the build directory
+        File buildDir = this.initBuildDir();
+
+        LOGGER.fine( "Initialized build directory." );
+        LOGGER.finer( "\tBuild directory: " + buildDir.getCanonicalPath() );
+
         // get the tag to test
         TagInfo tag = tagLibrary.getTag( tagName );
 
@@ -383,23 +466,25 @@ public class JspTester
 
         // generate the test case files
         List/* <File> */files = reportGenerator.generateTagReport( tagLibrary,
-                tagProperties, tag, attacks, outputDir );
+                tagProperties, tag, attacks, buildDir );
 
         LOGGER.fine( "Generated test case files." );
         LOGGER.finer( "\tTest case files: " + files );
 
         // load the test cases into the embedded Tomcat instance and serialize
         // them
-        serializeTests( files );
+        serializeTests( files, outputDir );
 
         LOGGER.fine( "Serialized test cases" );
 
         // copy the report file to the output location
         FileUtils.copyFileToDirectory( new File( Configuration.getInstance()
-                .getProperty( Configuration.EMBEDDED_DOC_BASE )
-                + File.separatorChar + tag.getTagName() + ".html" ), new File(
-                Configuration.getInstance().getProperty(
-                        Configuration.REPORT_OUTPUT_DIR ) ) );
+                .getProperty( Configuration.EMBEDDED_WEB_ROOT )
+                + File.separatorChar + tag.getTagName() + ".html" ), outputDir );
+
+        cleanup();
+
+        LOGGER.fine( "Performed cleanup." );
 
         LOGGER.exiting( JspTester.class.getName(), "testTag" );
     }
@@ -420,21 +505,47 @@ public class JspTester
     public static void main( String[] args ) throws Exception
     {
 
+        /*
+         * TODO: use a real command line parser to support more flexible
+         * arguments
+         */
+        if ( args.length < 2 )
+        {
+            throw new IllegalArgumentException( "Tag Library Definition File"
+                    + " and tag properties file are required arguments" );
+        }
+
         String tldFile = args[0];
         String tagPropsFile = args[1];
-        String tagName = args[2];
+
+        String outputDir = "output";
+        if ( args.length > 2 )
+        {
+            outputDir = args[2];
+        }
+
+        String tagName = null;
+        if ( args.length > 3 )
+        {
+            tagName = args[3];
+        }
 
         FileHandler fHandler = null;
         try
         {
-            Logger.getLogger( "" ).setLevel( Level.INFO );
 
-            // fHandler = new FileHandler( tagName + "-log.txt" );
-            // fHandler.setLevel( Level.INFO );
+            Handler handler = new ConsoleHandler();
+            handler.setLevel( Level.INFO );
+
+            Logger.getLogger( "" ).setLevel( Level.ALL );
+            Logger.getLogger( "" ).addHandler( handler );
+
+            // capture log output to a file for debugging
+            // fHandler = new FileHandler( ( tagName == null ? "report" :
+            // tagName )
+            // + "-log.txt" );
+            // fHandler.setLevel( Level.ALL );
             // Logger.getLogger( "" ).addHandler( fHandler );
-
-            String outputDir = Configuration.getInstance().getProperty(
-                    Configuration.EMBEDDED_DOC_BASE );
 
             JspTester tester = new JspTester( tldFile, tagPropsFile );
 
