@@ -120,15 +120,9 @@ public class Configuration
      */
     public static final String REPORT_FILE_NAME = "REPORT_FILE_NAME";
 
-    // public static final String REPORT_TEST_PREFIX = "REPORT_TEST_PREFIX";
-    //
-    // public static final String REPORT_TEST_SUFFIX = "REPORT_TEST_SUFFIX";
-
-    /**
-     * The directory to use for output
+    /*
+     * Default configuration properties
      */
-    public static final String REPORT_OUTPUT_DIR = "REPORT_OUTPUT_DIR";
-
     private static final Properties DEFAULTS = new Properties();
 
     // set defaults for properties
@@ -140,11 +134,12 @@ public class Configuration
         DEFAULTS.setProperty( EMBEDDED_DOC_BASE, System
                 .getProperty( "java.io.tmpdir" )
                 + File.separatorChar
-                + "JSP Testing Tool Output" + File.separatorChar + "report" );
+                + "JSP Testing Tool Output" );
         DEFAULTS.setProperty( EMBEDDED_WEB_ROOT, System
                 .getProperty( "java.io.tmpdir" )
                 + File.separatorChar
-                + "JSP Testing Tool Output" + File.separatorChar + "report" );
+                + "JSP Testing Tool Output"
+                + File.separatorChar + "report" );
         DEFAULTS.setProperty( EMBEDDED_PORT_NUM, String
                 .valueOf( EmbeddedServer.DEFAULT_PORT ) );
 
@@ -160,21 +155,7 @@ public class Configuration
         DEFAULTS.setProperty( REPORT_FILE_EXTENSION, ".jsp" );
         DEFAULTS.setProperty( REPORT_FRAME_NAMESPACE, "frame" );
         DEFAULTS.setProperty( REPORT_FILE_NAME, "report.html" );
-        DEFAULTS.setProperty( REPORT_OUTPUT_DIR, System
-                .getProperty( "java.io.tmpdir" )
-                + File.separatorChar
-                + "JSP Testing Tool Output" + File.separatorChar + "output" );
 
-        /*
-         * TODO: this is a temporary hack to make it work wit JSF. Will
-         * eventually have a UI component to allow custom prefix/suffix stuff
-         */
-        // DEFAULTS
-        // .setProperty(
-        // "REPORT_TEST_PREFIX",
-        // "<%@ taglib uri=\"http://java.sun.com/jsf/core\" prefix=\"f\"
-        // %>\n<f:view>\n<h:form>" );
-        // DEFAULTS.setProperty( "REPORT_TEST_SUFFIX", "</h:form></f:view>" );
     }
 
     /**
