@@ -133,4 +133,9 @@ public class TagLibraryUtils
 
         return attrMap;
     }
+    
+    /**
+     * Constructs an instance of <code>TagLibraryUtils</code>
+     */
+    private TagLibraryUtils(){}
 }

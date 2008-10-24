@@ -163,4 +163,12 @@ public class ErrorHandler
         return buff.toString();
 
     }
+
+    /**
+     * Constructs an instance of an <code>ErrorHandler</code>. Should never
+     * be invoked
+     */
+    private ErrorHandler()
+    {
+    }
 }

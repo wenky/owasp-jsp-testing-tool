@@ -73,10 +73,14 @@ public class TagInfoListCellRenderer implements ListCellRenderer
         this.listCellRenderer = renderer;
     }
 
-    /*
-     * (non-Javadoc)
+    /**
+     * Return a component that has been configured to display the tag name if
+     * the value is an instance of <code>TagInfo</code>. Otherwise, defaults
+     * to the display rendered by the wrapped renderer.
      * 
-     * @see javax.swing.DefaultListCellRenderer#getListCellRe-)ndererComponent(javax.swing.JList,
+     * @return a component that has been configured to display the tag name if
+     *         the value is an instance of <code>TagInfo</code>
+     * @see javax.swing.DefaultListCellRenderer#getListCellRendererComponent(javax.swing.JList,
      *      java.lang.Object, int, boolean, boolean)
      */
     public Component getListCellRendererComponent( JList list, Object value,

@@ -54,6 +54,14 @@ public class TestCase
             .getName() );
 
     /**
+     * Constructs an instance of <code>TestCase</code>
+     */
+    private TestCase()
+    {
+
+    }
+
+    /**
      * Create a proper JSP tag with the given attribute set to the given attack
      * 
      * @param tagLibrary

@@ -559,7 +559,6 @@ public class TagPropertiesEditor extends JFrame
                  * 
                  * @see java.awt.event.FocusAdapter#focusLost(java.awt.event.FocusEvent)
                  */
-                @Override
                 public void focusLost( FocusEvent e )
                 {
                     String newText = textField.getText();
