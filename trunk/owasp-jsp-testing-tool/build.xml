@@ -1,36 +1,60 @@
-<project name="JSPTestingTool" basedir="." default="main">
+<project name="JSPTestingTool" basedir="." default="run-tag-report">
 
-	<property name="app.name" value="JspTestingTool" />
+	<!-- These are application properties that should be set -->
+	<property name="app.title" value="OWASP JSP Testing Tool" />
+	<property name="jar.name" value="jsp-testing-tool" />
+	<property name="version.major" value="0" />
+	<property name="version.minor" value="99" />
+
+	<!-- These system dependent properties and should be set1 -->
+	<property name="os.abbr" value="windows" />
+	<property name="tomcat.home" value="C:\apache-tomcat-6.0.16" />
+	<property name="jdk.home" value="C:\Java\jdk1.6.0_06" />
+
+	<property name="version.label"
+		value="v${version.major}.${version.minor}" />
+
+	<property name="standalone.name" 
+		value="${jar.name}-${version.label}-${os.abbr}-standalone"/>
+	
 	<property name="src.dir" value="src" />
 	<property name="lib.dir" value="lib" />
 	<property name="build.dir" value="build" />
 	<property name="dist.dir" value="dist" />
-	<property name="docs.dir" value="doc" />
+	<property name="docs.dir" value="docs" />
 	<property name="resources.dir" value="resources" />
 	<property name="template.dir" value="template" />
-	<property name="jar.dir" value="${build.dir}/jar" />
 	<property name="standalone.dir" value="standalone" />
-
-	<property name="version.major" value="0" />
-	<property name="version.minor" value="99" />
-
-
-	<property name="tomcat.home" value="C:\apache-tomcat-6.0.16" />
-	<property name="jdk.home" value="C:\Java\jdk1.6.0_06" />
-	<property name="standalone.home" value="C:\${app.name}-${version.major}.${version.minor}-windows-standalone" />
-
-	<property name="jarfile" value="jsp-testing-tool" />
+	
+	<property name="standalone.build.dir"
+		value="${build.dir}/${standalone.name}" />
 
 	<path id="compile.classpath">
 		<fileset dir="${lib.dir}">
 			<include name="**/*.jar" />
 		</fileset>
+
 		<fileset dir="${tomcat.home}/bin">
 			<include name="*.jar" />
 		</fileset>
 		<fileset dir="${tomcat.home}/lib">
 			<include name="*.jar" />
 		</fileset>
+	</path>
+
+	<path id="run.classpath">
+		<dirset dir="${build.dir}/classes" />
+
+		<fileset dir="${lib.dir}">
+			<include name="**/*.jar" />
+		</fileset>
+
+		<fileset dir="${tomcat.home}/bin">
+			<include name="*.jar" />
+		</fileset>
+		<fileset dir="${tomcat.home}/lib">
+			<include name="*.jar" />
+		</fileset>		
 	</path>
 
 	<target name="clean">
@@ -48,81 +72,80 @@
 		</javac>
 	</target>
 
-	<target name="main" depends="clean,compile,jar" />
-
-	<target name="build-src-dist" depends="clean,compile">
-		<mkdir dir="${dist.dir}" />
-		<zip destfile="${dist.dir}/${jarfile}-src.${version.major}.${version.minor}.zip" basedir="${src.dir}" />
-		<zip destfile="${dist.dir}/${jarfile}-src.${version.major}.${version.minor}.zip" basedir="" includes="build.xml" update="true" />
-	</target>
-
-	<target name="build-bin-dist" depends="clean,compile,jar">
-
-		<mkdir dir="${dist.dir}" />
-
-		<copy file="${build.dir}/${jarfile}-bin.${version.major}.${version.minor}.jar" todir="${dist.dir}" />
-
-	</target>
-
-	<target name="build-dist" depends="clean,compile,jar, build-src-dist, build-bin-dist, javadoc">
-
-		<copy todir="dist">
-			<fileset dir="template" />
-		</copy>
-		<zip destfile="${dist.dir}/${jarfile}-required-libs-${version.major}.${version.minor}.zip" basedir="${lib.dir}" includes="*.jar" />
-
-	</target>
-
 	<target name="javadoc">
 
-		<!-- 
-			<javadoc access="public" author="true"
-			classpath="lib/nekohtml.jar;lib/xercesImpl.jar;lib/batik-util.jar;lib/dom4j.jar;lib/xml-apis.jar;lib/xml-apis-ext.jar;lib/batik-css.jar"
-			destdir="doc/api" doctitle="OWASP AntiSamy" nodeprecated="false"
-			nodeprecatedlist="false" noindex="false" nonavbar="false"
-			notree="false"
-			packagenames="org.owasp.validator.html.model,org.owasp.validator.html.util,org.owasp.validator.css,org.owasp.validator.html.scan,org.owasp.validator.html"
-			source="1.4" sourcepath="JavaSource/" splitindex="true" use="true"
+		<delete dir="${docs.dir}/api" />
+
+		<javadoc access="public" author="true"
+			classpathref="compile.classpath" destdir="${docs.dir}/api"
+			doctitle="${app.title}" nodeprecated="true" nodeprecatedlist="true"
+			noindex="false" nonavbar="false" notree="false" source="1.4"
+			sourcepath="${src.dir}" splitindex="true" use="true"
 			version="true">
-			<link href="http://xmlgraphics.apache.org/batik/javadoc/" />
-			<link href="http://xerces.apache.org/xerces-j/apiDocs/" />
-			<link href="http://www.w3.org/Style/CSS/SAC/doc/" />
 			<link href="http://java.sun.com/j2se/1.4.2/docs/api/" />
+			<link href="http://java.sun.com/javaee/5/docs/api/" />
+			<link href="http://commons.apache.org/codec/api-release/" />
+			<link href="http://hc.apache.org/httpclient-3.x/apidocs/" />
+			<link href="http://commons.apache.org/io/api-release/" />
+			<link href="http://commons.apache.org/collections/apidocs/" />
+			<link href="http://commons.apache.org/lang/api-release/" />
+			<link href="http://jakarta.apache.org/oro/api/" />
 			<link
-			href="http://people.apache.org/~andyc/neko/doc/html/javadoc/" />
+				href="http://velocity.apache.org/engine/releases/velocity-1.5/apidocs/" />
+			<link href="http://tomcat.apache.org/tomcat-6.0-doc/api/" />
 			<link
-			href="http://java.sun.com/webservices/jaxp/dist/1.1/docs/api/" />
-			</javadoc>
-			
-			<mkdir dir="${dist.dir}" />
-			
-			<zip
-			destfile="${dist.dir}/${jarfile}-javadocs.${version.major}.${version.minor}.zip"
-			basedir="${docs.dir}/api" />
-		-->
+				href="http://owasp-esapi-java.googlecode.com/svn/branches/1.3/javadoc/" />
+		</javadoc>
 
 	</target>
 
-	<target name="jar" depends="clean,compile">
+	<target name="build-src-dist" depends="clean">
+		<mkdir dir="${dist.dir}" />
+		<zip destfile="${dist.dir}/${jar.name}-src-${version.label}.zip"
+			basedir="${src.dir}" />
+			
+	</target>
 
-		<jar destfile="${build.dir}/${jarfile}-bin.${version.major}.${version.minor}.jar" basedir="${build.dir}">
+	<target name="build-bin-dist" depends="clean,compile">
+
+		<mkdir dir="${dist.dir}" />
+
+		<jar destfile="${dist.dir}/${jar.name}-bin-${version.label}.jar"
+			basedir="${build.dir}">
 			<manifest>
-				<attribute name="Project" value="${app.name}" />
-				<attribute name="Version" value="${version.major}.${version.minor}" />
-				<attribute name="Publisher" value="OWASP (http://www.owasp.org)" />
-				<attribute name="Main-Class" value="org.owasp.jsptester.tester.JspTester" />
+				<attribute name="Project" value="${app.title}" />
+				<attribute name="Version" value="${version.label}" />
+				<attribute name="Publisher"
+					value="OWASP (http://www.owasp.org)" />
+				<attribute name="Main-Class"
+					value="org.owasp.jsptester.tester.JspTester" />
 			</manifest>
 		</jar>
 
 	</target>
 
+	<target name="build-required-libs-dist" depends="clean">
+		<mkdir dir="${dist.dir}" />
+		<zip
+			destfile="${dist.dir}/${jar.name}-required-libs-${version.label}.zip"
+			basedir="${lib.dir}" includes="**/*.jar" />
+	</target>
+
+	<target name="build-javadoc-dist" depends="clean,javadoc">
+		<mkdir dir="${dist.dir}" />
+
+		<zip
+			destfile="${dist.dir}/${jar.name}-javadocs-${version.label}.zip"
+			basedir="${docs.dir}/api" />
+	</target>
+
 	<target name="build-stand-alone" depends="clean,compile">
 
-		<delete dir="${standalone.home}" />
+		<delete dir="${standalone.build.dir}" />
 
-		<mkdir dir="${standalone.home}" />
+		<mkdir dir="${standalone.build.dir}" />
 
-		<copy todir="${standalone.home}//tomcat">
+		<copy todir="${standalone.build.dir}//tomcat">
 			<fileset dir="${tomcat.home}">
 				<include name="bin/**" />
 				<include name="conf/**" />
@@ -138,7 +161,7 @@
 			</fileset>
 		</copy>
 
-		<copy todir="${standalone.home}/java">
+		<copy todir="${standalone.build.dir}/java">
 			<fileset dir="${jdk.home}">
 				<include name="bin/**" />
 				<include name="include/**" />
@@ -151,19 +174,60 @@
 			</fileset>
 		</copy>
 
-		<copy todir="${standalone.home}">
+		<copy todir="${standalone.build.dir}">
 			<fileset dir="${basedir}">
 				<include name="${template.dir}/**" />
 				<include name="${resources.dir}/**" />
-				<include name="${build.dir}/**" />
+				<include name="${build.dir}/classes/**" />
 				<include name="${lib.dir}/**" />
 				<include name="${src.dir}/**" />
 			</fileset>
 			<fileset dir="${standalone.dir}" />
 		</copy>
 
-		<zip 
-			destfile="${app.name}-${version.major}.${version.minor}-windows-standalone.zip"
-			basedir="${standalone.home}" includes="**" />
+		<zip
+			destfile="${dist.dir}/${standalone.name}.zip"
+			basedir="${standalone.build.dir}" includes="**" />
+	</target>
+
+
+	<target name="build-dist"
+		depends="clean,build-src-dist,build-bin-dist,build-required-libs-dist,build-javadoc-dist,build-stand-alone" />
+
+	<target name="run-gui" depends="clean,compile">
+		<java
+			classname="org.owasp.jsptester.conf.tagproperties.ui.TagPropertiesEditor"
+			fork="true" dir="${basedir}" classpathref="run.classpath">
+
+			<arg value="${resources.dir}/html_basic.tpx" />
+			<arg value="${resources.dir}/html_basic.tld" />
+		</java>
+	</target>
+
+	<target name="run-full-report" depends="clean,compile">
+		<delete dir="${basedir}/output" />
+
+		<java classname="org.owasp.jsptester.tester.JspTester"
+			fork="true" dir="${basedir}" classpathref="run.classpath">
+			<arg value="${resources.dir}/html_basic.tld" />
+			<arg value="${resources.dir}/html_basic.tpx" />
+			<arg value="${basedir}/output" />
+		</java>
+	</target>
+
+	<target name="run-tag-report" depends="clean,compile">
+
+		<delete dir="${basedir}/output" />
+
+		<input message="Enter tag to test: " addproperty="test.tag.name"
+			defaultvalue="outputLabel" />
+
+		<java classname="org.owasp.jsptester.tester.JspTester"
+			fork="true" dir="${basedir}" classpathref="run.classpath">
+			<arg value="${resources.dir}/html_basic.tld" />
+			<arg value="${resources.dir}/html_basic.tpx" />
+			<arg value="${basedir}/output" />
+			<arg value="${test.tag.name}" />
+		</java>
 	</target>
 </project>
