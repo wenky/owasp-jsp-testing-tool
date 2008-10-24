@@ -46,7 +46,16 @@ public class TagProperties
     /**
      * The tag properties
      */
-    private final Properties tagProperties = new Properties();;
+    private final Properties tagProperties = new Properties();
+
+    /**
+     * Constructs an instance of <code>TagProperties</code>. The instance is
+     * initially empty with no parameters set.
+     */
+    public TagProperties()
+    {
+
+    }
 
     /**
      * Returns the prefix to use for the given tag

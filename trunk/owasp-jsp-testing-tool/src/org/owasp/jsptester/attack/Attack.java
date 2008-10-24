@@ -96,9 +96,13 @@ public class Attack
         return displayName;
     }
 
-    /*
-     * (non-Javadoc)
+    /**
+     * Returns a string representation of this attack. The string representation
+     * consists of the name of the attack, the display name and the attack
+     * string enclosed in square brackets (<code>"[]"</code>) each prepended
+     * with a label.
      * 
+     * @return a string representation of this attack
      * @see java.lang.Object#toString()
      */
     public String toString()

@@ -42,6 +42,14 @@ public class DataBean
     private String test = "";
 
     /**
+     * Constructs an instance of <code>DataBean</code>
+     */
+    public DataBean()
+    {
+
+    }
+
+    /**
      * Returns the value stored in the bean
      * 
      * @return the value stored in the bean

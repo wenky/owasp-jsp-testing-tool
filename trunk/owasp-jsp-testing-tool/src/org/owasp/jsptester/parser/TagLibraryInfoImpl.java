@@ -55,9 +55,17 @@ public class TagLibraryInfoImpl extends TagLibraryInfo
         shortname = prefix;
     }
 
-    /*
-     * (non-Javadoc)
+    /**
+     * Returns an array of <code>TagLibraryInfo</code> objects representing
+     * the entire set of tag libraries (including this
+     * <code>TagLibraryInfo</code>) imported by taglib directives in the
+     * translation unit that references this <code>TagLibraryInfo</code>.
      * 
+     * @return an array of <code>TagLibraryInfo</code> objects representing
+     *         the entire set of tag libraries (including this
+     *         <code>TagLibraryInfo</code>) imported by taglib directives in
+     *         the translation unit that references this
+     *         <code>TagLibraryInfo</code>.
      * @see javax.servlet.jsp.tagext.TagLibraryInfo#getTagLibraryInfos()
      */
     public TagLibraryInfo[] getTagLibraryInfos()
