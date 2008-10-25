@@ -1,4 +1,4 @@
-<project name="JSPTestingTool" basedir="." default="run-tag-report">
+<project name="JSPTestingTool" basedir="." default="build-dist">
 
 	<!-- These are application properties that should be set -->
 	<property name="app.title" value="OWASP JSP Testing Tool" />
@@ -59,10 +59,13 @@
 
 	<target name="clean">
 		<delete dir="${build.dir}" />
-		<delete dir="${dist.dir}" />
 		<delete dir="${docs.dir}/api" />
 	</target>
 
+	<target name="distclean" depends="clean">
+		<delete dir="${dist.dir}" />
+	</target>
+	
 	<target name="compile">
 
 		<mkdir dir="${build.dir}/classes" />
@@ -72,7 +75,7 @@
 		</javac>
 	</target>
 
-	<target name="javadoc">
+	<target name="javadoc" depends="clean">
 
 		<delete dir="${docs.dir}/api" />
 
@@ -99,14 +102,14 @@
 
 	</target>
 
-	<target name="build-src-dist" depends="clean">
+	<target name="build-src-dist" depends="distclean">
 		<mkdir dir="${dist.dir}" />
 		<zip destfile="${dist.dir}/${jar.name}-src-${version.label}.zip"
 			basedir="${src.dir}" />
 			
 	</target>
 
-	<target name="build-bin-dist" depends="clean,compile">
+	<target name="build-bin-dist" depends="distclean,compile">
 
 		<mkdir dir="${dist.dir}" />
 
@@ -124,14 +127,14 @@
 
 	</target>
 
-	<target name="build-required-libs-dist" depends="clean">
+	<target name="build-required-libs-dist" depends="distclean">
 		<mkdir dir="${dist.dir}" />
 		<zip
 			destfile="${dist.dir}/${jar.name}-required-libs-${version.label}.zip"
 			basedir="${lib.dir}" includes="**/*.jar" />
 	</target>
 
-	<target name="build-javadoc-dist" depends="clean,javadoc">
+	<target name="build-javadoc-dist" depends="distclean,javadoc">
 		<mkdir dir="${dist.dir}" />
 
 		<zip
@@ -139,7 +142,7 @@
 			basedir="${docs.dir}/api" />
 	</target>
 
-	<target name="build-stand-alone" depends="clean,compile">
+	<target name="build-stand-alone" depends="distclean,compile">
 
 		<delete dir="${standalone.build.dir}" />
 
@@ -192,7 +195,7 @@
 
 
 	<target name="build-dist"
-		depends="clean,build-src-dist,build-bin-dist,build-required-libs-dist,build-javadoc-dist,build-stand-alone" />
+		depends="distclean,build-src-dist,build-bin-dist,build-required-libs-dist,build-javadoc-dist,build-stand-alone" />
 
 	<target name="run-gui" depends="clean,compile">
 		<java
