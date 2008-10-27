@@ -43,6 +43,33 @@ import org.owasp.jsptester.exec.EmbeddedServer;
  */
 public class Configuration
 {
+
+    /**
+     * The name of the tool
+     */
+    public static final String ABOUT_TOOL_NAME = "ABOUT_TOOL_NAME";
+    
+    /**
+     * The name of the author
+     */
+    public static final String ABOUT_AUTHOR = "ABOUT_AUTHOR";
+    
+    /**
+     * The email address to display in the about box 
+     */
+    public static final String ABOUT_EMAIL = "ABOUT_EMAIL";
+    
+    /**
+     * The version of the tool
+     */
+    public static final String ABOUT_VERSION = "ABOUT_VERSION";
+    
+    /**
+     * The icon file to use
+     */
+    public static final String ABOUT_ICON = "ABOUT_ICON";
+    
+    
     /**
      * The location of the attack library XML file
      */
@@ -129,6 +156,12 @@ public class Configuration
     static
     {
 
+        DEFAULTS.setProperty( ABOUT_TOOL_NAME, "OWASP JSP Testing Tool" );
+        DEFAULTS.setProperty( ABOUT_AUTHOR, "Jason Li" );
+        DEFAULTS.setProperty( ABOUT_EMAIL, "jason.li@owasp.org" );
+        DEFAULTS.setProperty( ABOUT_VERSION, "0.99" );
+        DEFAULTS.setProperty( ABOUT_ICON, "resources/owasp_logo.gif" );
+        
         DEFAULTS.setProperty( ATTACK_LIBRARY, "resources/attacks.xml" );
 
         DEFAULTS.setProperty( EMBEDDED_DOC_BASE, System
