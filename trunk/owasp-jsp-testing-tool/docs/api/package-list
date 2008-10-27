@@ -1,0 +1,8 @@
+org.owasp.jsptester.attack
+org.owasp.jsptester.conf
+org.owasp.jsptester.conf.tagproperties.ui
+org.owasp.jsptester.databean
+org.owasp.jsptester.exec
+org.owasp.jsptester.parser
+org.owasp.jsptester.report
+org.owasp.jsptester.tester
