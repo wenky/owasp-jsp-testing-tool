@@ -27,6 +27,7 @@
  */
 package org.owasp.jsptester.conf.tagproperties.ui;
 
+import java.awt.Component;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
@@ -45,8 +46,10 @@ import javax.servlet.jsp.tagext.TagLibraryInfo;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.DefaultListModel;
+import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -63,6 +66,7 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.filechooser.FileFilter;
 
+import org.owasp.jsptester.conf.Configuration;
 import org.owasp.jsptester.conf.TagProperties;
 import org.owasp.jsptester.parser.TagFileParser;
 import org.xml.sax.SAXException;
@@ -254,6 +258,31 @@ public class TagPropertiesEditor extends JFrame
     }
 
     /**
+     * Returns a <code>Component</code> that contains the necessary
+     * information for an About message.
+     * 
+     * @return a <code>Component</code> that contains the necessary
+     *         information for an About message
+     */
+    private Component buildAboutMessage()
+    {
+        Box box = Box.createVerticalBox();
+
+        box.add( new JLabel( Configuration.getInstance().getProperty(
+                Configuration.ABOUT_TOOL_NAME ) ) );
+        box.add( new JLabel( Configuration.getInstance().getProperty(
+                Configuration.ABOUT_AUTHOR ) ) );
+        String email = Configuration.getInstance().getProperty(
+                Configuration.ABOUT_EMAIL );
+        box.add( new JLabel( "<html><a href=\"mailto:" + email + "\"/>" + email
+                + "</a></html>" ) );
+        box.add( new JLabel( Configuration.getInstance().getProperty(
+                Configuration.ABOUT_VERSION ) ) );
+
+        return box;
+    }
+
+    /**
      * Returns a <code>JMenuBar</code> populated with all the menu items for
      * the tag properties editor GUI
      * 
@@ -373,10 +402,7 @@ public class TagPropertiesEditor extends JFrame
              */
             public void actionPerformed( ActionEvent e )
             {
-                // TODO: create a better about box
-                JOptionPane.showMessageDialog( TagPropertiesEditor.this,
-                        "OWASP JSP Testing Tool", "About",
-                        JOptionPane.INFORMATION_MESSAGE );
+                about();
             }
 
         } );
@@ -661,6 +687,20 @@ public class TagPropertiesEditor extends JFrame
             System.exit( 0 );
         }
 
+    }
+
+    /**
+     * Displays the About dialog. Lists name of tool, author, e-mail address of
+     * author, current version number and/or release date.
+     */
+    private void about()
+    {
+
+        JOptionPane
+                .showMessageDialog( this, buildAboutMessage(), "About",
+                        JOptionPane.INFORMATION_MESSAGE, new ImageIcon(
+                                Configuration.getInstance().getProperty(
+                                        Configuration.ABOUT_ICON ) ) );
     }
 
     /**
