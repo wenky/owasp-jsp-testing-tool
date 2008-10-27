@@ -198,23 +198,39 @@
 		depends="distclean,build-src-dist,build-bin-dist,build-required-libs-dist,build-javadoc-dist,build-stand-alone" />
 
 	<target name="run-gui" depends="clean,compile">
+
+		<input message="Enter tag library definition (.tld)) file: " addproperty="test.tag.library"
+					defaultvalue="${resources.dir}/html_basic.tld" />
+		
+		<input message="Enter tag properties configuration (.tpx) file: " addproperty="test.tag.properties"
+					defaultvalue="${resources.dir}/html_basic.tpx" />
+
 		<java
 			classname="org.owasp.jsptester.conf.tagproperties.ui.TagPropertiesEditor"
 			fork="true" dir="${basedir}" classpathref="run.classpath">
 
-			<arg value="${resources.dir}/html_basic.tpx" />
-			<arg value="${resources.dir}/html_basic.tld" />
+			<arg value="${test.tag.properties}" />
+			<arg value="${test.tag.library}" />
 		</java>
 	</target>
 
 	<target name="run-full-report" depends="clean,compile">
 		<delete dir="${basedir}/output" />
 
+		<input message="Enter tag library definition (.tld)) file: " addproperty="test.tag.library"
+					defaultvalue="${resources.dir}/html_basic.tld" />
+		
+		<input message="Enter tag properties configuration (.tpx) file: " addproperty="test.tag.properties"
+					defaultvalue="${resources.dir}/html_basic.tpx" />
+		
+		<input message="Enter output directory: " addproperty="test.output.dir"
+							defaultvalue="${basedir}/output" />
+				
 		<java classname="org.owasp.jsptester.tester.JspTester"
 			fork="true" dir="${basedir}" classpathref="run.classpath">
-			<arg value="${resources.dir}/html_basic.tld" />
-			<arg value="${resources.dir}/html_basic.tpx" />
-			<arg value="${basedir}/output" />
+			<arg value="${test.tag.library}" />
+			<arg value="${test.tag.properties}" />
+			<arg value="${test.output.dir}" />
 		</java>
 	</target>
 
@@ -222,14 +238,23 @@
 
 		<delete dir="${basedir}/output" />
 
+		<input message="Enter tag library definition (.tld)) file: " addproperty="test.tag.library"
+					defaultvalue="${resources.dir}/html_basic.tld" />
+		
+		<input message="Enter tag properties configuration (.tpx) file: " addproperty="test.tag.properties"
+					defaultvalue="${resources.dir}/html_basic.tpx" />
+		
+		<input message="Enter output directory: " addproperty="test.output.dir"
+							defaultvalue="${basedir}/output" />
+		
 		<input message="Enter tag to test: " addproperty="test.tag.name"
 			defaultvalue="outputLabel" />
 
 		<java classname="org.owasp.jsptester.tester.JspTester"
-			fork="true" dir="${basedir}" classpathref="run.classpath">
-			<arg value="${resources.dir}/html_basic.tld" />
-			<arg value="${resources.dir}/html_basic.tpx" />
-			<arg value="${basedir}/output" />
+			fork="true" dir="${basedir}" classpathref="run.classpath">			
+			<arg value="${test.tag.library}" />
+			<arg value="${test.tag.properties}" />
+			<arg value="${test.output.dir}" />
 			<arg value="${test.tag.name}" />
 		</java>
 	</target>
